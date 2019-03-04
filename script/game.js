@@ -8,7 +8,6 @@ var Game = {
     portalFovZ: 0,
     delta: [0,0],
     offset: [39, 13],
-    direction: [1,0],
 
     init: function () {
         this.display = new ROT.Display();
@@ -49,31 +48,92 @@ var Game = {
 
     _generateMap: function () {
         var freeCells = [];
-
+        var walls = [];
         // create some rooms. Third index is "dimension"
         //var roomSize=[6,6];
-        var colors=['#f0f',"#0ff"];
-        for (let k = 0; k < 2; k++) { // dimension
+        var colors=['#f00','#ff0','#0f0','#0ff','#00f','#f0f'];
+        var newDir=-1;
+        var wallCount;
+        var newPortal=null;
+        var pC;
+        for (let k = 0; k < 6; k++) { // dimension
             let roomSize=[6+k,6+k];
+            if (k>0) {
+                let index = Math.floor(ROT.RNG.getUniform() * walls.length);
+                let key = walls.splice(index, 1)[0];
+                let parts = key.split(',');
+                let px = parseInt(parts[0]);
+                let py = parseInt(parts[1]);
+                let pz = parseInt(parts[2]);
+                pC=[parseInt(roomSize[0]/2) , parseInt(roomSize[1]/2),k , px, py, pz];
+            }
             for (let i = 0; i <= roomSize[0]; i++) { //x
                 for (let j = 0; j <= roomSize[1]; j++) {//y
                     let newKey = i + ',' + j + ',' + k;
+                    
                     if (!i || !j || i==roomSize[0] || j==roomSize[1]) {
-                        this.map[newKey] = new Tile('#',colors[k],false,false,null);//'#';
+                        newDir=-1;
+                        wallCount=0;
+                        if (!i) {wallCount++; newDir=0;}
+                        if (!j) {wallCount++; newDir=1;}
+                        if (i==roomSize[0]) {wallCount++; newDir=2;}
+                        if (j==roomSize[1]) {wallCount++; newDir=3;}
+                        if (wallCount>1) {newDir=-1;}
+                        else {
+                            walls.push(newKey);
+                        }
+                        var newChar='#';
+                        this.map[newKey] = new Tile(newChar,colors[k],false,false,null,newDir);//'#';
                     }
                     else {
-                        this.map[newKey] = new Tile('.',colors[k],true,true,null);
+                        this.map[newKey] = new Tile('.',colors[k],true,true,null,-1);
                         freeCells.push(newKey);
                     }
                 }
             }
+            if (k>0) {
+                newPortal = new Connection(pC[0],pC[1],pC[2],pC[3],pC[4],pC[5]);
+                this.map[newPortal.getKey(1)].contains=newPortal;
+                this.map[newPortal.getKey(0)].contains=newPortal;
+                newPortal.correctEntrance(1);
+                newPortal.correctEntrance(0);
+            }
         }
 
-        var pC=[0,2,0,7,4,1];
+        for (let k=0;k<3;k++) {
+            for (let i=0;i<2;i++) {
+                let index = Math.floor(ROT.RNG.getUniform() * walls.length);
+                let key = walls.splice(index, 1)[0];
+                let parts = key.split(',');
+                let px = parseInt(parts[0]);
+                let py = parseInt(parts[1]);
+                let pz = parseInt(parts[2]);
+                pC[3*i] = px;
+                pC[3*i+1] = py;
+                pC[3*i+2] = pz;
+                //pC=[parseInt(roomSize[0]/2) , parseInt(roomSize[1]/2),k , px, py, pz];
+            }
+            
+            newPortal = new Connection(pC[0],pC[1],pC[2],pC[3],pC[4],pC[5]);
+            this.map[newPortal.getKey(1)].contains=newPortal;
+            this.map[newPortal.getKey(0)].contains=newPortal;
+            newPortal.correctEntrance(1);
+            newPortal.correctEntrance(0);
+        }
+
+        /*var pC=[0,2,0,7,4,1];
         var portal = new Connection(pC[0],pC[1],pC[2],pC[3],pC[4],pC[5]);
 
         this.map[portal.getKey(0)].contains=portal;
         this.map[portal.getKey(1)].contains=portal;
+
+        pC = [0,4,0,3,0,1];
+        var portal2 = new Connection(pC[0],pC[1],pC[2],pC[3],pC[4],pC[5]);
+
+        this.map[portal2.getKey(0)].contains=portal2;
+        this.map[portal2.getKey(1)].contains=portal2;
+
+        portal2.correctEntrance(1);*/
 
         let index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
         let key = freeCells.splice(index, 1)[0];
@@ -93,7 +153,7 @@ var Game = {
         if (!secondPass) {
             Game.display.clear();
         }
-        this.fov.compute(this.player.x, this.player.y, 100, function (x, y, r, visibility) {
+        this.fov.compute(this.player.x, this.player.y, 50, function (x, y, r, visibility) {
             let key = x + ',' + y + ',' + Game.player.z;
             if (key in Game.map) {
                 if (secondPass==false) {
@@ -101,7 +161,8 @@ var Game = {
                         Game._drawPortal(Game.map[key].contains);
                     }
                 }
-                Game.directionalDisplay(Game.display, x - Game.player.x, y - Game.player.y, Game.map[key].getChar(), Game.map[key].getColor(),Game.direction);
+                Game.display.draw(x - Game.player.x + Game.offset[0], y - Game.player.y + Game.offset[1], Game.map[key].getChar(), Game.map[key].getColor());
+                //Game.directionalDisplay(Game.display, x - Game.player.x, y - Game.player.y, Game.map[key].getChar(), Game.map[key].getColor(),Game.direction);
             }
         });
     },
@@ -110,28 +171,26 @@ var Game = {
         //portalFovZ
         //console.log("Draw portal called");
         this.delta=portal.getDelta();
+        var portalDir;
         if (portal.p2[2] == this.player.z) {
             this.portalFovZ = portal.p1[2];
+            //portalDir=portal.direction1;
         }
         else {
             this.portalFovZ = portal.p2[2];
+            //portalDir=portal.direction2;
             for (let i=0;i<this.delta.length;i++) {
                 this.delta[i]=-this.delta[i];
             }
         }
-        this.portalFov.compute(this.player.x-this.delta[0],this.player.y-this.delta[1],100, function (x,y,r,visibility) {
+        this.portalFov.compute(this.player.x-this.delta[0],this.player.y-this.delta[1],50, function (x,y,r,visibility) {
             let key = x + ',' + y + ',' + Game.portalFovZ;
             if (key in Game.map) {
-                Game.directionalDisplay(Game.display, x - Game.player.x + Game.delta[0], y - Game.player.y + Game.delta[1], Game.map[key].getChar(), Game.map[key].getColor(),Game.direction);
+                //Game.directionalDisplay(Game.display, x - Game.player.x + Game.delta[0], y - Game.player.y + Game.delta[1], Game.map[key].getChar(), Game.map[key].getColor(),portalDir);
+                Game.display.draw(x - Game.player.x + Game.offset[0] + Game.delta[0], y - Game.player.y + Game.offset[1]  + Game.delta[1], Game.map[key].getChar(), Game.map[key].getColor());
             }
         });
     },
-
-    directionalDisplay(display,x,y,char,color,direction) {
-        let yDirection=[-direction[1],direction[0]];
-        let drawCoord = [x * direction[0] + y * yDirection[0], x * direction[1] + y * yDirection[1]]
-        display.draw(Game.offset[0]+drawCoord[0],Game.offset[1]+drawCoord[1],char,color);
-    }
 
 };
 
@@ -143,7 +202,7 @@ function Player (x, y, z) {
 };
 
 Player.prototype.draw = function () {
-    Game.display.draw(Game.offset[0], Game.offset[1], "@", "#ff0");
+    Game.display.draw(Game.offset[0], Game.offset[1], "@", "#fff");
 };
 
 Player.prototype.act = function () {
@@ -168,11 +227,8 @@ Player.prototype.handleEvent = function (e) {
     }
     let diff = ROT.DIRS[8][keyMap[code]];
 
-    let yDirection=[-Game.direction[1],Game.direction[0]];
-    let actualDiff = [diff[0] * Game.direction[0] - diff[1] * yDirection[0], -diff[0] * Game.direction[1] + diff[1] * yDirection[1]]
-
-    let newX = this.x + actualDiff[0];
-    let newY = this.y + actualDiff[1];
+    let newX = this.x + diff[0];
+    let newY = this.y + diff[1];
     let newZ = this.z;
 
     // check if valid
@@ -205,9 +261,54 @@ Player.prototype.handleEvent = function (e) {
     Game.engine.unlock();
 };
 
-function Connection(x1,y1,z1,x2,y2,z2) {
+function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
     this.p1=[x1,y1,z1];
     this.p2=[x2,y2,z2];
+
+    // corrects entrance to mesh with entrace 1
+    this.correctEntrance = function(which) {
+        var desiredDirection;
+        var pother;
+        if (!which) {
+            pother=this.p2;
+            desiredDirection=Game.map[this.getKey(0)].getDirection();
+            Game.map[this.getKey(1)].contains=null;
+        }
+        else {
+            pother=this.p1;
+            desiredDirection=Game.map[this.getKey(1)].getDirection();
+            Game.map[this.getKey(0)].contains=null;
+        }
+        var acceptAny=false;
+        if (desiredDirection==-1) {
+            acceptAny=true;
+        }
+        desiredDirection+=2;
+        desiredDirection%=4;
+        let breaker=0;
+        var newKey;
+        while (breaker<10) {
+            for (let i=-breaker;i<breaker;i++) {
+                for (let j=-breaker;j<breaker;j++) {
+                    newKey=(pother[0]+i)+','+(pother[1]+j)+','+pother[2];
+                    if (newKey in Game.map && (Game.map[newKey].contains==null) &&(Game.map[newKey].getDirection() == desiredDirection || (acceptAny && Game.map[newKey].getDirection() >= 0))) {
+                        pother[0]+=i;
+                        pother[1]+=j;
+                        break;
+                    }
+                }
+            }
+            breaker++;
+        }
+        if (!which) {
+            this.p2=pother;
+            Game.map[this.getKey(1)].contains=this;
+        }
+        else {
+            this.p1=pother;
+            Game.map[this.getKey(0)].contains=this;
+        }
+    };
 
     this.getDelta = function() {
         return [this.p2[0] - this.p1[0], this.p2[1] - this.p1[1]];
@@ -239,12 +340,16 @@ function Connection(x1,y1,z1,x2,y2,z2) {
     }
 };
 
-function Tile(char,color,passable,seethrough,contains) {
+function Tile(char,color,passable,seethrough,contains,direction) {
     this.char=char;
     this.color=color;
     this.passable=passable;
     this.seethrough=seethrough;
     this.contains=contains;
+    this.direction=direction;
+    this.getDirection=function() {
+        return direction;
+    }
     this.lightPasses=function() {
         if (this.contains==null) {
             return this.seethrough;
