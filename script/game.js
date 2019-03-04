@@ -83,13 +83,22 @@ var Game = {
         this.player = new Player(px, py,pz);
     },
 
-    _drawVisible: function () {
-        Game.display.clear();
+    _drawVisible: function() {
+        this.__drawVisible(false); // first pass includes portals
+        this.__drawVisible(true); // second only the main room, overwriting weirdness
+    },
+
+    __drawVisible: function (secondPass) {
+        if (!secondPass) {
+            Game.display.clear();
+        }
         this.fov.compute(this.player.x, this.player.y, 100, function (x, y, r, visibility) {
             let key = x + ',' + y + ',' + Game.player.z;
             if (key in Game.map) {
-                if (Game.map[key].contains != null && Game.map[key].contains instanceof Connection) {
-                    Game._drawPortal(Game.map[key].contains);
+                if (secondPass==false) {
+                    if (Game.map[key].contains != null && Game.map[key].contains instanceof Connection) {
+                        Game._drawPortal(Game.map[key].contains);
+                    }
                 }
                 Game.display.draw(x - Game.player.x + (Game.offset[0]), y - Game.player.y + (Game.offset[1]), Game.map[key].getChar(), Game.map[key].getColor());
             }
