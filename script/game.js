@@ -18,7 +18,7 @@ var Game = {
             //return true;
             var key = x + ',' + y + ',' + Game.player.z;
             if (key in Game.map) {
-                return (Game.map[key].lightPasses());
+                return ((Game.map[key].lightPasses()));
             }
             return true;
         }
@@ -56,7 +56,7 @@ var Game = {
         var wallCount;
         var newPortal=null;
         var pC;
-        for (let k = 0; k < 6; k++) { // dimension
+        for (let k = 0; k < 2; k++) { // dimension
             let roomSize=[6+k,6+k];
             if (k>0) {
                 let index = Math.floor(ROT.RNG.getUniform() * walls.length);
@@ -162,7 +162,9 @@ var Game = {
                         Game._drawPortal(Game.map[key].contains);
                     }
                 }
-                Game.display.draw(x - Game.player.x + Game.offset[0], y - Game.player.y + Game.offset[1], Game.map[key].getChar(), Game.map[key].getColor());
+                if (Game.map[key].getChar() != ' ') {
+                    Game.display.draw(x - Game.player.x + Game.offset[0], y - Game.player.y + Game.offset[1], Game.map[key].getChar(), Game.map[key].getColor());
+                }
                 //Game.directionalDisplay(Game.display, x - Game.player.x, y - Game.player.y, Game.map[key].getChar(), Game.map[key].getColor(),Game.direction);
             }
         });
