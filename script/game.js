@@ -8,6 +8,7 @@ var Game = {
     portalFovZ: 0,
     delta: [0,0],
     offset: [39, 13],
+    direction: [1,0],
 
     init: function () {
         this.display = new ROT.Display();
@@ -100,7 +101,7 @@ var Game = {
                         Game._drawPortal(Game.map[key].contains);
                     }
                 }
-                Game.display.draw(x - Game.player.x + (Game.offset[0]), y - Game.player.y + (Game.offset[1]), Game.map[key].getChar(), Game.map[key].getColor());
+                Game.directionalDisplay(Game.display, x - Game.player.x, y - Game.player.y, Game.map[key].getChar(), Game.map[key].getColor(),Game.direction);
             }
         });
     },
@@ -121,9 +122,15 @@ var Game = {
         this.portalFov.compute(this.player.x-this.delta[0],this.player.y-this.delta[1],100, function (x,y,r,visibility) {
             let key = x + ',' + y + ',' + Game.portalFovZ;
             if (key in Game.map) {
-                Game.display.draw(x - Game.player.x + (Game.offset[0]+Game.delta[0]), y - Game.player.y + (Game.offset[1]+Game.delta[1]), Game.map[key].getChar(), Game.map[key].getColor());
+                Game.directionalDisplay(Game.display, x - Game.player.x + Game.delta[0], y - Game.player.y + Game.delta[1], Game.map[key].getChar(), Game.map[key].getColor(),Game.direction);
             }
         });
+    },
+
+    directionalDisplay(display,x,y,char,color,direction) {
+        let yDirection=[-direction[1],direction[0]];
+        let drawCoord = [x * direction[0] + y * yDirection[0], x * direction[1] + y * yDirection[1]]
+        display.draw(Game.offset[0]+drawCoord[0],Game.offset[1]+drawCoord[1],char,color);
     }
 
 };
@@ -160,8 +167,12 @@ Player.prototype.handleEvent = function (e) {
         return;
     }
     let diff = ROT.DIRS[8][keyMap[code]];
-    let newX = this.x + diff[0];
-    let newY = this.y + diff[1];
+
+    let yDirection=[-Game.direction[1],Game.direction[0]];
+    let actualDiff = [diff[0] * Game.direction[0] - diff[1] * yDirection[0], -diff[0] * Game.direction[1] + diff[1] * yDirection[1]]
+
+    let newX = this.x + actualDiff[0];
+    let newY = this.y + actualDiff[1];
     let newZ = this.z;
 
     // check if valid
