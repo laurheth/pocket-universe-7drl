@@ -38,7 +38,7 @@ var Game = {
         this.fov = new ROT.FOV.PreciseShadowcasting(lightPasses);
         this.portalFov = new ROT.FOV.PreciseShadowcasting(lightPassesPortal);
         this._drawVisible();
-        this.player.draw();
+        //this.player.draw();
 
         var scheduler = new ROT.Scheduler.Simple();
         scheduler.add(this.player, true);
@@ -142,6 +142,7 @@ var Game = {
         let py = parseInt(parts[1]);
         let pz = parseInt(parts[2]);
         this.player = new Player(px, py,pz);
+        this.map[key].entity=this.player;
     },
 
     _drawVisible: function() {
@@ -192,17 +193,45 @@ var Game = {
         });
     },
 
+    noOtherPortals: function(x,y,z) {
+        for (let i=-2;i<3;i++) {
+            for (let j=-2;j<3;j++) {
+                let key=(x+i)+','+(y+j)+','+z;
+                if (key in Game.map && Game.map[key].contains!=null) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    },
+
 };
 
 function Player (x, y, z) {
     this.x = x;
     this.y = y;
     this.z = z;
-    this.draw();
+    //this.draw();
 };
 
-Player.prototype.draw = function () {
+/*Player.prototype.draw = function () {
     Game.display.draw(Game.offset[0], Game.offset[1], "@", "#fff");
+};*/
+
+Player.prototype.lightPasses = function() {
+    return true;
+};
+
+Player.prototype.passThrough = function() {
+    return true;
+};
+
+Player.prototype.getChar = function() {
+    return '@';
+};
+
+Player.prototype.getColor = function() {
+    return '#fff';
 };
 
 Player.prototype.act = function () {
@@ -252,11 +281,16 @@ Player.prototype.handleEvent = function (e) {
         //console.log("newZ?");
     }
     //Game.display.draw(this.x, this.y, Game.map[this.x + ',' + this.y]);
+
+    Game.map[this.x+','+this.y+','+this.z].entity=null;
+
     this.x = newX;
     this.y = newY;
     this.z = newZ;
+
+    Game.map[this.x+','+this.y+','+this.z].entity=this;
     Game._drawVisible();
-    this.draw();
+    //this.draw();
     window.removeEventListener("keydown", this);
     Game.engine.unlock();
 };
@@ -287,11 +321,11 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
         desiredDirection%=4;
         let breaker=0;
         var newKey;
-        while (breaker<10) {
+        while (breaker<15) {
             for (let i=-breaker;i<breaker;i++) {
                 for (let j=-breaker;j<breaker;j++) {
                     newKey=(pother[0]+i)+','+(pother[1]+j)+','+pother[2];
-                    if (newKey in Game.map && (Game.map[newKey].contains==null) &&(Game.map[newKey].getDirection() == desiredDirection || (acceptAny && Game.map[newKey].getDirection() >= 0))) {
+                    if (newKey in Game.map && (Game.noOtherPortals(pother[0]+i,pother[1]+j,pother[2])) &&(Game.map[newKey].getDirection() == desiredDirection || (acceptAny && Game.map[newKey].getDirection() >= 0))) {
                         pother[0]+=i;
                         pother[1]+=j;
                         break;
@@ -346,6 +380,7 @@ function Tile(char,color,passable,seethrough,contains,direction) {
     this.passable=passable;
     this.seethrough=seethrough;
     this.contains=contains;
+    this.entity=null;
     this.direction=direction;
     this.getDirection=function() {
         return direction;
@@ -359,6 +394,9 @@ function Tile(char,color,passable,seethrough,contains,direction) {
         }
     }
     this.passThrough=function() {
+        if (this.entity != null) {
+            return false;
+        }
         if (this.contains==null) {
             return this.passable;
         }
@@ -367,6 +405,9 @@ function Tile(char,color,passable,seethrough,contains,direction) {
         }
     }
     this.getChar=function() {
+        if (this.entity != null) {
+            return this.entity.getChar();
+        }
         if (this.contains == null) {
             return this.char;
         }
@@ -375,6 +416,9 @@ function Tile(char,color,passable,seethrough,contains,direction) {
         }
     }
     this.getColor=function() {
+        if (this.entity != null) {
+            return this.entity.getColor();
+        }
         if (this.contains == null) {
             return this.color;
         }
