@@ -303,7 +303,7 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
     // corrects entrance to mesh with entrace 1
     this.correctEntrance = function(which) {
         var desiredDirection;
-        console.log("Correcting?");
+        //console.log("Correcting?");
         var pother;
         if (!which) {
             pother=this.p2;
@@ -321,7 +321,7 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
         }
         desiredDirection+=2;
         desiredDirection%=4;
-        console.log(desiredDirection);
+        //console.log(desiredDirection);
         let breaker=0;
         var newKey;
         while (breaker<30) {

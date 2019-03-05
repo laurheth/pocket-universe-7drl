@@ -1,32 +1,26 @@
 var RoomGen = {
     colors:['#f00','#ff0','#0f0','#0ff','#00f','#f0f'],
-    
+
     generateRoom:function(k,roomSize) {
         //this.rectRoom(k,roomSize);
-        newWalls=this.tRoom(k,roomSize);
+        if (ROT.RNG.getUniform()>0.5) {
+            newWalls=this.rectRoom(k,roomSize);
+        }
+        else {
+            newWalls=this.tRoom(k,roomSize);
+        }
         this.wallDirections(newWalls);
     },
 
     rectRoom:function(k,roomSize) {
-        var newDir=-1;
-        var wallCount;
+        var newWalls=[];
         for (let i = 0; i <= roomSize[0]; i++) { //x
             for (let j = 0; j <= roomSize[1]; j++) {//y
                 let newKey = i + ',' + j + ',' + k;
                 
                 if (!i || !j || i==roomSize[0] || j==roomSize[1]) {
-                    newDir=-1;
-                    wallCount=0;
-                    if (!i) {wallCount++; newDir=0;}
-                    if (!j) {wallCount++; newDir=1;}
-                    if (i==roomSize[0]) {wallCount++; newDir=2;}
-                    if (j==roomSize[1]) {wallCount++; newDir=3;}
-                    if (wallCount>1) {newDir=-1;}
-                    else {
-                        Game.walls.push(newKey);
-                    }
-                    var newChar='#';
-                    Game.map[newKey] = new Tile(newChar,this.colors[k % this.colors.length],false,false,null,newDir);//'#';
+                    Game.map[newKey] = new Tile('#',this.colors[k % this.colors.length],false,false,null,-1);//'#';
+                    newWalls.push(newKey);
                 }
                 else {
                     Game.map[newKey] = new Tile('.',this.colors[k % this.colors.length],true,true,null,-1);
@@ -34,6 +28,7 @@ var RoomGen = {
                 }
             }
         }
+        return newWalls;
     },
 
     tRoom:function(k,roomSize) {
@@ -128,7 +123,7 @@ var RoomGen = {
             if (newDir>=0) {
                 Game.walls.push(newKey);
                 Game.map[newKey].setDirection(newDir);
-                console.log(newDir + ','+Game.map[newKey].getDirection());
+                //console.log(newDir + ','+Game.map[newKey].getDirection());
             }
         }
     },
