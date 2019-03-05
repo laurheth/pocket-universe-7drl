@@ -2,6 +2,7 @@ var Game = {
     display: null,
     map: {},
     player: null,
+    scheduler: null,
     engine: null,
     fov: null,
     portalFov: null,
@@ -42,9 +43,10 @@ var Game = {
         this._drawVisible();
         //this.player.draw();
 
-        var scheduler = new ROT.Scheduler.Simple();
-        scheduler.add(this.player, true);
-        this.engine = new ROT.Engine(scheduler);
+        this.scheduler = new ROT.Scheduler.Simple();
+        this.scheduler.add(this.player, true);
+        this.scheduler.add(this._addEntity(),true);
+        this.engine = new ROT.Engine(this.scheduler);
         this.engine.start();
     },
 
@@ -124,6 +126,18 @@ var Game = {
         let pz = parseInt(parts[2]);
         this.player = new Player(px, py,pz);
         this.map[key].entity=this.player;
+
+        //this._addEntity();  
+    },
+
+    _addEntity: function() {
+        let index = Math.floor(ROT.RNG.getUniform() * this.freeCells.length);
+        let key = this.freeCells.splice(index, 1)[0];
+        let parts = key.split(',');
+        let px = parseInt(parts[0]);
+        let py = parseInt(parts[1]);
+        let pz = parseInt(parts[2]);
+        return new Entity(px,py,pz,'g','#0f0','Goblin',true);
     },
 
     _drawVisible: function() {
@@ -232,6 +246,7 @@ Player.prototype.getColor = function() {
 };
 
 Player.prototype.act = function () {
+    Game._drawVisible();
     Game.engine.lock();
     window.addEventListener("keydown", this);
 };
@@ -261,10 +276,10 @@ Player.prototype.handleEvent = function (e) {
     let newKey = newX + ',' + newY + ',' + newZ;
     //if (!(newKey in Game.map) || !(Game.map[newKey].passThrough())) {
     if (!(newKey in Game.map) || !(Game.map[newKey].passThrough())) {
-	if (newKey in Game.map && Game.map[newKey].contains != null) {
-	    Game.map[newKey].contains.act();
-	    Game._drawVisible();
-	}
+	    if (newKey in Game.map && Game.map[newKey].contains != null) {
+            Game.map[newKey].contains.actOn();
+            Game._drawVisible();
+	    }
         return;
     }
     if (Game.map[newKey].contains != null && Game.map[newKey].contains instanceof Connection) {
@@ -290,7 +305,7 @@ Player.prototype.handleEvent = function (e) {
     this.z = newZ;
 
     Game.map[this.x+','+this.y+','+this.z].entity=this;
-    Game._drawVisible();
+    //Game._drawVisible();
     //this.draw();
     window.removeEventListener("keydown", this);
     Game.engine.unlock();
@@ -386,8 +401,8 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
         return this.open;
     };
 
-    this.act=function() {
-	this.open=true;
+    this.actOn=function() {
+	    this.open=true;
     };
 };
 
@@ -407,6 +422,11 @@ function Tile(char,color,passable,seethrough,contains,direction) {
         return this.direction;
     }
     this.lightPasses=function() {
+        if (this.entity!=null) {
+            if ('lightPasses' in this.entity) {
+                return this.entity.lightPasses;
+            }
+        }
         if (this.contains==null) {
             return this.seethrough;
         }
