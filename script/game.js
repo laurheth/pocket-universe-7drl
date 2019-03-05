@@ -56,7 +56,7 @@ var Game = {
         
         var newPortal=null;
         var pC;
-        for (let k = 0; k < 2; k++) { // dimension
+        for (let k = 0; k < 6; k++) { // dimension
             let roomSize=[10+k,10+k];
             if (k>0 && this.walls.length>0) {
                 let index = Math.floor(ROT.RNG.getUniform() * this.walls.length);
