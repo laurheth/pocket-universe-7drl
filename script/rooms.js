@@ -68,6 +68,28 @@ var RoomGen = {
 
     wallDirections:function(newWalls) {
         //console.log(newWalls);
+        var orientations = [
+            [
+                [-1,0,1],
+                [-1,0,1],
+                [-1,0,1]
+            ],
+            [
+                [-1,-1,-1],
+                [0,0,0],
+                [1,1,1]
+            ],
+            [
+                [1,0,-1],
+                [1,0,-1],
+                [1,0,-1]
+            ],
+            [
+                [1,1,1],
+                [0,0,0],
+                [-1,-1,-1]
+            ],
+        ];
         for (let q=0;q<newWalls.length;q++) {
             let newKey=newWalls[q];
             let parts = newKey.split(',');
@@ -76,41 +98,22 @@ var RoomGen = {
             let pz = parseInt(parts[2]);
             var newDir=-1;
             var wallCount=0;
+            var options=[0,0,0,0];
             for (let i=-1;i<2;i++) {
                 for (let j=-1;j<2;j++) {
                     let testKey=(px+i)+','+(py+j)+','+pz;
-                    if (i==-1 && j==0 && testKey in Game.map && Game.map[testKey].passThrough()) {
-                        newDir=0;
-                        wallCount++;
+                    var thisTile;
+                    if (!(testKey in Game.map)) {
+                        thisTile=-1;
                     }
-                    if (i==-1 && j==0 && !(testKey in Game.map)) {
-                        newDir=2;
-                        wallCount++;
+                    else if (Game.map[testKey].passThrough()) {
+                        thisTile=1;
                     }
-                    if (j==-1 && i==0 && testKey in Game.map && Game.map[testKey].passThrough()) {
-                        newDir=1;
-                        wallCount++;
+                    else {
+                        thisTile=0;
                     }
-                    if (j==-1 && i==0 && !(testKey in Game.map)) {
-                        newDir=3;
-                        wallCount++;
-                    }
-
-                    if (i==1 && j==0 && testKey in Game.map && Game.map[testKey].passThrough()) {
-                        newDir=2;
-                        wallCount++;
-                    }
-                    if (i==1 && j==0 && !(testKey in Game.map)) {
-                        newDir=0;
-                        wallCount++;
-                    }
-                    if (j==1 && i==0 && testKey in Game.map && Game.map[testKey].passThrough()) {
-                        newDir=3;
-                        wallCount++;
-                    }
-                    if (j==1 && i==0 && !(testKey in Game.map)) {
-                        newDir=1;
-                        wallCount++;
+                    for (let q=0;q<4;q++) {
+                        
                     }
                 }
             }
