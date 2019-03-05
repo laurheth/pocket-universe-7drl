@@ -56,7 +56,7 @@ var Game = {
         var wallCount;
         var newPortal=null;
         var pC;
-        for (let k = 0; k < 6; k++) { // dimension
+        for (let k = 0; k < 2; k++) { // dimension
             let roomSize=[6+k,6+k];
             if (k>0) {
                 let index = Math.floor(ROT.RNG.getUniform() * walls.length);
@@ -170,29 +170,43 @@ var Game = {
         });
     },
 
-    _drawPortal: function(portal) {
+    _drawPortal: function(portal,second=false) {
         //portalFovZ
         //console.log("Draw portal called");
         this.delta=portal.getDelta();
         var portalDir;
-        if (portal.p2[2] == this.player.z) {
-            this.portalFovZ = portal.p1[2];
-            //portalDir=portal.direction1;
-        }
-        else {
-            this.portalFovZ = portal.p2[2];
-            //portalDir=portal.direction2;
-            for (let i=0;i<this.delta.length;i++) {
-                this.delta[i]=-this.delta[i];
+	if (portal.p2[2] == portal.p1[2]) {
+	    if (second) {
+		this.portalFovZ = portal.p1[2];
+	    }
+	    else {
+		this.portalFovZ = portal.p2[2];
+		for (let i=0;i<this.delta.length;i++) {
+                    this.delta[i]=-this.delta[i];
+		}
+	    }
+	}
+	else {
+            if (portal.p2[2] == this.player.z) {
+		this.portalFovZ = portal.p1[2];
             }
-        }
+            else {
+		this.portalFovZ = portal.p2[2];
+		for (let i=0;i<this.delta.length;i++) {
+                    this.delta[i]=-this.delta[i];
+		}
+            }
+	}
         this.portalFov.compute(this.player.x-this.delta[0],this.player.y-this.delta[1],50, function (x,y,r,visibility) {
             let key = x + ',' + y + ',' + Game.portalFovZ;
             if (key in Game.map) {
-                //Game.directionalDisplay(Game.display, x - Game.player.x + Game.delta[0], y - Game.player.y + Game.delta[1], Game.map[key].getChar(), Game.map[key].getColor(),portalDir);
                 Game.display.draw(x - Game.player.x + Game.offset[0] + Game.delta[0], y - Game.player.y + Game.offset[1]  + Game.delta[1], Game.map[key].getChar(), Game.map[key].getColor());
             }
         });
+
+	if (portal.p2[2] == portal.p1[2] && !second) {
+	    this._drawPortal(portal,true);
+	}
     },
 
     noOtherPortals: function(x,y,z) {
@@ -266,6 +280,10 @@ Player.prototype.handleEvent = function (e) {
     let newKey = newX + ',' + newY + ',' + newZ;
     //if (!(newKey in Game.map) || !(Game.map[newKey].passThrough())) {
     if (!(newKey in Game.map) || !(Game.map[newKey].passThrough())) {
+	if (newKey in Game.map && Game.map[newKey].contains != null) {
+	    Game.map[newKey].contains.act();
+	    Game._drawVisible();
+	}
         return;
     }
     if (Game.map[newKey].contains != null && Game.map[newKey].contains instanceof Connection) {
@@ -300,7 +318,7 @@ Player.prototype.handleEvent = function (e) {
 function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
     this.p1=[x1,y1,z1];
     this.p2=[x2,y2,z2];
-
+    this.open=false;
     // corrects entrance to mesh with entrace 1
     this.correctEntrance = function(which) {
         var desiredDirection;
@@ -351,11 +369,21 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
     };
 
     this.getChar=function() {
-        return '*';
+	if (this.open) {
+            return '*';
+	}
+	else {
+	    return "+";
+	}
     };
 
     this.getColor=function() {
-        return '#00f';
+	if (this.open) {
+            return '#00f';
+	}
+	else {
+	    return '#0ff';
+	}
     };
 
     this.getKey=function(which) {
@@ -365,15 +393,19 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
         else {
             return this.p2[0]+','+this.p2[1]+','+this.p2[2];
         }
-    }
+    };
 
     this.lightPasses=function() {
-        return true;
-    }
+        return this.open && (this.p1[2]==Game.portalFovZ || this.p2[2]==Game.portalFovZ);
+    };
 
     this.passThrough=function() {
-        return true;
-    }
+        return this.open;
+    };
+
+    this.act=function() {
+	this.open=true;
+    };
 };
 
 function Tile(char,color,passable,seethrough,contains,direction) {
