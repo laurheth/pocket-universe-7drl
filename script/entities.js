@@ -53,6 +53,14 @@ var ChaseMixin = function(obj) {
     }
 };
 
+var WaterMixin = function(obj,targWater) {
+    obj.targWater=targWater;
+    obj.act = function () {
+        Game.map[this.getKey()].water+=this.targWater;
+        Game.map[this.getKey()].nextWater+=this.targWater;
+    };
+};
+
 var GrowMixin = function(obj,growChance) {
     obj.isPlant=true;
     obj.growChance = growChance;
@@ -162,6 +170,10 @@ var EntityMaker = {
             case 'Plant':
             newThing = new Entity(x,y,z,'P','#0f0','Plant',true);
             GrowMixin(newThing,0.2);
+            break;
+            case 'Fountain':
+            newThing = new Entity(x,y,z,'^','#0ff','Fountain',true);
+            WaterMixin(newThing,50);
             break;
         }
         return newThing;

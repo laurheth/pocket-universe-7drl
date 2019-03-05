@@ -11,6 +11,7 @@ var Game = {
     offset: [39, 13],
     walls: null,
     freeCells: null,
+    minWater: 10,
 
     init: function () {
         this.display = new ROT.Display();
@@ -46,6 +47,7 @@ var Game = {
         this.scheduler = new ROT.Scheduler.Simple();
         this.scheduler.add(this.player, true);
         this.scheduler.add(this._addEntity(),true);
+        this.scheduler.add(TileManager,true);
         this.engine = new ROT.Engine(this.scheduler);
         this.engine.start();
     },
@@ -118,14 +120,16 @@ var Game = {
 
         portal2.correctEntrance(1);*/
 
+        
         let index = Math.floor(ROT.RNG.getUniform() * this.freeCells.length);
         let key = this.freeCells.splice(index, 1)[0];
         let parts = key.split(',');
         let px = parseInt(parts[0]);
         let py = parseInt(parts[1]);
         let pz = parseInt(parts[2]);
-        this.player = new Player(px, py,pz);
-        this.map[key].entity=this.player;
+        this.player = new Player(px, py, pz);
+        this.map[key].entity = this.player;
+        
 
         //this._addEntity();  
     },
@@ -137,7 +141,7 @@ var Game = {
         let px = parseInt(parts[0]);
         let py = parseInt(parts[1]);
         let pz = parseInt(parts[2]);
-        return EntityMaker.makeByName('Plant',px,py,pz);//new Entity(px,py,pz,'g','#0f0','Goblin',true);
+        return EntityMaker.makeByName('Fountain',px,py,pz);//new Entity(px,py,pz,'g','#0f0','Goblin',true);
     },
 
     _drawVisible: function() {
@@ -414,7 +418,60 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
     };
 };
 
-function Tile(char,color,passable,seethrough,contains,direction) {
+// To update water
+var TileManager = {
+    //flowRate:5,
+    act : function() {
+        var tiles = Object.keys(Game.map);
+        var flowRate=5;
+        for (let i=0;i<tiles.length;i++) {
+            if (Game.map[tiles[i]].water>2*Game.minWater) {
+                //flowRate = Math.min((Game.map[tiles[i]].water - Game.minWater)/4,Game.minWater);
+                let parts=tiles[i].split(',');
+                //console.log(parts);
+                let x=parseInt(parts[0]);
+                let y=parseInt(parts[1]);
+                let z=parseInt(parts[2]);
+                //var neighbourWater=0;
+                for (let j = -1; j < 2; j++) {
+                    for (let jj = -1; jj < 2; jj++) {
+                        if (j == jj) {
+                            continue;
+                        }
+                        if (j != 0 && jj != 0) {
+                            continue;
+                        }
+                        var testTile = (j + x) + ',' + (jj + y) + ',' + z;
+                        //console.log('?'+j+','+jj+' '+testTile+','+y);
+                        if (testTile in Game.map && Game.map[testTile].passThrough()) {
+                            if (Game.map[testTile].contains instanceof Connection) {
+                                var whichSide;
+                                if (testTile == Game.map[testTile].contains.getKey(0)) {
+                                    whichSide = 1;
+                                }
+                                else {
+                                    whichSide = 0;
+                                }
+                                testTile = Game.map[testTile].contains.getKey(whichSide);
+                            }
+                            if (Game.map[testTile].water < Game.map[tiles[i]].water) {
+                                flowRate = (Game.map[tiles[i]].water - Game.map[testTile].water)/4;
+                                //console.log("add some water");
+                                Game.map[testTile].nextWater+=flowRate;
+                                Game.map[tiles[i]].nextWater-=flowRate;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        for (let i=0;i<tiles.length;i++) {
+            Game.map[tiles[i]].water=Game.map[tiles[i]].nextWater;
+        }
+    }
+};
+
+function Tile(char,color,passable,seethrough,contains,direction,water=0) {
     this.char=char;
     this.color=color;
     this.passable=passable;
@@ -422,6 +479,8 @@ function Tile(char,color,passable,seethrough,contains,direction) {
     this.contains=contains;
     this.entity=null;
     this.direction=direction;
+    this.water=water;
+    this.nextWater=water;
     this.setDirection=function(newDir) {
         //console.log("Setting to")
         this.direction=newDir;
@@ -458,10 +517,20 @@ function Tile(char,color,passable,seethrough,contains,direction) {
             return this.entity.getChar();
         }
         if (this.contains == null) {
-            if (this.direction >= 0) {
-                return String(this.direction);
+            //if (this.direction >= 0) {
+            //    return String(this.direction);
+            //}
+            if (this.water < Game.minWater) {
+                return this.char;
             }
-            return this.char;
+            else {
+                if (this.water < 4*Game.minWater) {
+                    return '~';//String(Math.min(parseInt(this.water/Game.minWater),9));
+                }
+                else {
+                    return '\u2248';
+                }
+            }
         }
         else {
             return this.contains.getChar();
@@ -472,7 +541,12 @@ function Tile(char,color,passable,seethrough,contains,direction) {
             return this.entity.getColor();
         }
         if (this.contains == null) {
-            return this.color;
+            if (this.water < Game.minWater) {
+                return this.color;
+            }
+            else {
+                return '#00f';
+            }
         }
         else {
             return this.contains.getColor();
