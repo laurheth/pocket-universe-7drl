@@ -46,7 +46,8 @@ var Game = {
 
         this.scheduler = new ROT.Scheduler.Simple();
         this.scheduler.add(this.player, true);
-        this.scheduler.add(this._addEntity(),true);
+        this.scheduler.add(this._addEntity('Fountain'),true);
+        this.scheduler.add(this._addEntity('Volcano'),true);
         this.scheduler.add(TileManager,true);
         this.engine = new ROT.Engine(this.scheduler);
         this.engine.start();
@@ -134,14 +135,14 @@ var Game = {
         //this._addEntity();  
     },
 
-    _addEntity: function() {
+    _addEntity: function(name) {
         let index = Math.floor(ROT.RNG.getUniform() * this.freeCells.length);
         let key = this.freeCells.splice(index, 1)[0];
         let parts = key.split(',');
         let px = parseInt(parts[0]);
         let py = parseInt(parts[1]);
         let pz = parseInt(parts[2]);
-        return EntityMaker.makeByName('Fountain',px,py,pz);//new Entity(px,py,pz,'g','#0f0','Goblin',true);
+        return EntityMaker.makeByName(name,px,py,pz);//new Entity(px,py,pz,'g','#0f0','Goblin',true);
     },
 
     _drawVisible: function() {
@@ -454,9 +455,23 @@ var TileManager = {
                                 }
                                 testTile = Game.map[testTile].contains.getKey(whichSide);
                             }
+                            //if ()
                             if (Game.map[testTile].water < Game.map[tiles[i]].water) {
                                 flowRate = (Game.map[tiles[i]].water - Game.map[testTile].water)/4;
                                 //console.log("add some water");
+                                if (Game.map[testTile].liquidType != Game.map[tiles[i]].liquidType) {
+                                    if (Game.map[testTile] > Game.minWater) {
+                                        Game.map[tiles[i]].nextWater=0;
+                                        Game.map[testTile].nextWater=0;
+                                        Game.map[testTile].color='#666';
+                                        Game.map[tiles[i]].color='#666';
+                                        continue;
+                                    }
+                                    else {
+                                        Game.map[testTile].liquidType = Game.map[tiles[i]].liquidType;
+                                    }
+                                }
+                                
                                 Game.map[testTile].nextWater+=flowRate;
                                 Game.map[tiles[i]].nextWater-=flowRate;
                             }
@@ -471,7 +486,7 @@ var TileManager = {
     }
 };
 
-function Tile(char,color,passable,seethrough,contains,direction,water=0) {
+function Tile(char,color,passable,seethrough,contains,direction,water=0,liquidType=0) {
     this.char=char;
     this.color=color;
     this.passable=passable;
@@ -481,6 +496,7 @@ function Tile(char,color,passable,seethrough,contains,direction,water=0) {
     this.direction=direction;
     this.water=water;
     this.nextWater=water;
+    this.liquidType=liquidType; // 0 = water, 1 = lava?
     this.setDirection=function(newDir) {
         //console.log("Setting to")
         this.direction=newDir;
@@ -545,7 +561,12 @@ function Tile(char,color,passable,seethrough,contains,direction,water=0) {
                 return this.color;
             }
             else {
-                return '#00f';
+                if (this.liquidType==0) {
+                    return '#00f';
+                }
+                else if (this.liquidType==1) {
+                    return '#fa0';
+                }
             }
         }
         else {

@@ -53,9 +53,11 @@ var ChaseMixin = function(obj) {
     }
 };
 
-var WaterMixin = function(obj,targWater) {
+var WaterMixin = function(obj,targWater,liquidType) {
+    obj.liquidType=liquidType;
     obj.targWater=targWater;
     obj.act = function () {
+        Game.map[this.getKey()].liquidType=this.liquidType;
         Game.map[this.getKey()].water+=this.targWater;
         Game.map[this.getKey()].nextWater+=this.targWater;
     };
@@ -173,7 +175,11 @@ var EntityMaker = {
             break;
             case 'Fountain':
             newThing = new Entity(x,y,z,'^','#0ff','Fountain',true);
-            WaterMixin(newThing,50);
+            WaterMixin(newThing,50,0);
+            break;
+            case 'Volcano':
+            newThing = new Entity(x,y,z,'^','#f00','Volcano',true);
+            WaterMixin(newThing,40,1);
             break;
         }
         return newThing;
