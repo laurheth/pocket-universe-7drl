@@ -303,6 +303,7 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
     // corrects entrance to mesh with entrace 1
     this.correctEntrance = function(which) {
         var desiredDirection;
+        console.log("Correcting?");
         var pother;
         if (!which) {
             pother=this.p2;
@@ -320,6 +321,7 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
         }
         desiredDirection+=2;
         desiredDirection%=4;
+        console.log(desiredDirection);
         let breaker=0;
         var newKey;
         while (breaker<30) {
@@ -397,8 +399,12 @@ function Tile(char,color,passable,seethrough,contains,direction) {
     this.contains=contains;
     this.entity=null;
     this.direction=direction;
+    this.setDirection=function(newDir) {
+        //console.log("Setting to")
+        this.direction=newDir;
+    }
     this.getDirection=function() {
-        return direction;
+        return this.direction;
     }
     this.lightPasses=function() {
         if (this.contains==null) {
@@ -424,6 +430,9 @@ function Tile(char,color,passable,seethrough,contains,direction) {
             return this.entity.getChar();
         }
         if (this.contains == null) {
+            if (this.direction >= 0) {
+                return String(this.direction);
+            }
             return this.char;
         }
         else {

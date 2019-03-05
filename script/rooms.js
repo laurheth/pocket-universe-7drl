@@ -70,22 +70,22 @@ var RoomGen = {
         //console.log(newWalls);
         var orientations = [
             [
+                [-1,0,2],
                 [-1,0,1],
-                [-1,0,1],
-                [-1,0,1]
+                [-1,0,2]
             ],
             [
                 [-1,-1,-1],
                 [0,0,0],
-                [1,1,1]
+                [2,1,2]
             ],
             [
+                [2,0,-1],
                 [1,0,-1],
-                [1,0,-1],
-                [1,0,-1]
+                [2,0,-1]
             ],
             [
-                [1,1,1],
+                [2,1,2],
                 [0,0,0],
                 [-1,-1,-1]
             ],
@@ -98,7 +98,7 @@ var RoomGen = {
             let pz = parseInt(parts[2]);
             var newDir=-1;
             var wallCount=0;
-            var options=[0,0,0,0];
+            var options=[true,true,true,true];
             for (let i=-1;i<2;i++) {
                 for (let j=-1;j<2;j++) {
                     let testKey=(px+i)+','+(py+j)+','+pz;
@@ -112,17 +112,23 @@ var RoomGen = {
                     else {
                         thisTile=0;
                     }
-                    for (let q=0;q<4;q++) {
-                        
+                    for (let qq=0;qq<4;qq++) {
+                        if (orientations[qq][j+1][i+1]==2) {
+                            continue;
+                        }
+                        options[qq] &= (thisTile == orientations[qq][j+1][i+1]);
                     }
                 }
             }
-            if (wallCount>2) {
-                newDir=-1;
+            for (let qq=0;qq<4;qq++) {
+                if (options[qq]) {
+                    newDir=qq;
+                }
             }
-            else {
+            if (newDir>=0) {
                 Game.walls.push(newKey);
-                Game.map[newKey].direction=newDir;
+                Game.map[newKey].setDirection(newDir);
+                console.log(newDir + ','+Game.map[newKey].getDirection());
             }
         }
     },
