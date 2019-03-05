@@ -8,6 +8,8 @@ var Game = {
     portalFovZ: 0,
     delta: [0,0],
     offset: [39, 13],
+    walls: null,
+    freeCells: null,
 
     init: function () {
         this.display = new ROT.Display();
@@ -47,51 +49,28 @@ var Game = {
     },
 
     _generateMap: function () {
-        var freeCells = [];
-        var walls = [];
+        this.freeCells = [];
+        this.walls = [];
         // create some rooms. Third index is "dimension"
         //var roomSize=[6,6];
-        var colors=['#f00','#ff0','#0f0','#0ff','#00f','#f0f'];
-        var newDir=-1;
-        var wallCount;
+        
         var newPortal=null;
         var pC;
         for (let k = 0; k < 2; k++) { // dimension
-            let roomSize=[6+k,6+k];
-            if (k>0) {
-                let index = Math.floor(ROT.RNG.getUniform() * walls.length);
-                let key = walls.splice(index, 1)[0];
+            let roomSize=[10+k,10+k];
+            if (k>0 && this.walls.length>0) {
+                let index = Math.floor(ROT.RNG.getUniform() * this.walls.length);
+                let key = this.walls.splice(index, 1)[0];
                 let parts = key.split(',');
                 let px = parseInt(parts[0]);
                 let py = parseInt(parts[1]);
                 let pz = parseInt(parts[2]);
                 pC=[parseInt(roomSize[0]/2) , parseInt(roomSize[1]/2),k , px, py, pz];
             }
-            for (let i = 0; i <= roomSize[0]; i++) { //x
-                for (let j = 0; j <= roomSize[1]; j++) {//y
-                    let newKey = i + ',' + j + ',' + k;
-                    
-                    if (!i || !j || i==roomSize[0] || j==roomSize[1]) {
-                        newDir=-1;
-                        wallCount=0;
-                        if (!i) {wallCount++; newDir=0;}
-                        if (!j) {wallCount++; newDir=1;}
-                        if (i==roomSize[0]) {wallCount++; newDir=2;}
-                        if (j==roomSize[1]) {wallCount++; newDir=3;}
-                        if (wallCount>1) {newDir=-1;}
-                        else {
-                            walls.push(newKey);
-                        }
-                        var newChar='#';
-                        this.map[newKey] = new Tile(newChar,colors[k],false,false,null,newDir);//'#';
-                    }
-                    else {
-                        this.map[newKey] = new Tile('.',colors[k],true,true,null,-1);
-                        freeCells.push(newKey);
-                    }
-                }
-            }
-            if (k>0) {
+
+            RoomGen.generateRoom(k,roomSize);
+
+            if (k>0 && this.walls.length>0) {
                 newPortal = new Connection(pC[0],pC[1],pC[2],pC[3],pC[4],pC[5]);
                 this.map[newPortal.getKey(1)].contains=newPortal;
                 this.map[newPortal.getKey(0)].contains=newPortal;
@@ -100,25 +79,27 @@ var Game = {
             }
         }
 
-        for (let k=0;k<3;k++) {
-            for (let i=0;i<2;i++) {
-                let index = Math.floor(ROT.RNG.getUniform() * walls.length);
-                let key = walls.splice(index, 1)[0];
-                let parts = key.split(',');
-                let px = parseInt(parts[0]);
-                let py = parseInt(parts[1]);
-                let pz = parseInt(parts[2]);
-                pC[3*i] = px;
-                pC[3*i+1] = py;
-                pC[3*i+2] = pz;
-                //pC=[parseInt(roomSize[0]/2) , parseInt(roomSize[1]/2),k , px, py, pz];
+        if (this.walls.length > 0) {
+            for (let k = 0; k < 3; k++) {
+                for (let i = 0; i < 2; i++) {
+                    let index = Math.floor(ROT.RNG.getUniform() * this.walls.length);
+                    let key = this.walls.splice(index, 1)[0];
+                    let parts = key.split(',');
+                    let px = parseInt(parts[0]);
+                    let py = parseInt(parts[1]);
+                    let pz = parseInt(parts[2]);
+                    pC[3 * i] = px;
+                    pC[3 * i + 1] = py;
+                    pC[3 * i + 2] = pz;
+                    //pC=[parseInt(roomSize[0]/2) , parseInt(roomSize[1]/2),k , px, py, pz];
+                }
+
+                newPortal = new Connection(pC[0], pC[1], pC[2], pC[3], pC[4], pC[5]);
+                this.map[newPortal.getKey(1)].contains = newPortal;
+                this.map[newPortal.getKey(0)].contains = newPortal;
+                newPortal.correctEntrance(1);
+                newPortal.correctEntrance(0);
             }
-            
-            newPortal = new Connection(pC[0],pC[1],pC[2],pC[3],pC[4],pC[5]);
-            this.map[newPortal.getKey(1)].contains=newPortal;
-            this.map[newPortal.getKey(0)].contains=newPortal;
-            newPortal.correctEntrance(1);
-            newPortal.correctEntrance(0);
         }
 
         /*var pC=[0,2,0,7,4,1];
@@ -135,8 +116,8 @@ var Game = {
 
         portal2.correctEntrance(1);*/
 
-        let index = Math.floor(ROT.RNG.getUniform() * freeCells.length);
-        let key = freeCells.splice(index, 1)[0];
+        let index = Math.floor(ROT.RNG.getUniform() * this.freeCells.length);
+        let key = this.freeCells.splice(index, 1)[0];
         let parts = key.split(',');
         let px = parseInt(parts[0]);
         let py = parseInt(parts[1]);
@@ -341,7 +322,7 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
         desiredDirection%=4;
         let breaker=0;
         var newKey;
-        while (breaker<15) {
+        while (breaker<30) {
             for (let i=-breaker;i<breaker;i++) {
                 for (let j=-breaker;j<breaker;j++) {
                     newKey=(pother[0]+i)+','+(pother[1]+j)+','+pother[2];
