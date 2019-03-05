@@ -276,9 +276,17 @@ Player.prototype.handleEvent = function (e) {
     let newKey = newX + ',' + newY + ',' + newZ;
     //if (!(newKey in Game.map) || !(Game.map[newKey].passThrough())) {
     if (!(newKey in Game.map) || !(Game.map[newKey].passThrough())) {
-	    if (newKey in Game.map && Game.map[newKey].contains != null) {
-            Game.map[newKey].contains.actOn();
-            Game._drawVisible();
+	    if (newKey in Game.map) {
+            if (Game.map[newKey].contains != null) {
+                Game.map[newKey].contains.actOn();
+                Game._drawVisible();
+            }
+            else if (Game.map[newKey].entity != null)  {
+                if ('actOn' in Game.map[newKey].entity) {
+                    Game.map[newKey].entity.actOn();
+                    Game._drawVisible();
+                }
+            }
 	    }
         return;
     }

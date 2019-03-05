@@ -77,6 +77,8 @@ var RoomGen = {
         return newWalls;
     },
 
+    
+
     wallDirections:function(newWalls) {
         // clean up extraneous walls
         for (let q=0;q<newWalls.length;q++) {

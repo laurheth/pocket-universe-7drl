@@ -2,6 +2,7 @@ function Entity (x,y,z,char,color,name, lightPasses=true) {
     this.x=x;
     this.y=y;
     this.z=z;
+    this.active=true;
     this.targetDir=null;
     this.char=char;
     this.color=color;
@@ -28,6 +29,9 @@ Entity.prototype.act = function() {
 
 var ChaseMixin = function(obj) {
     obj.act = function () {
+        if (!this.active) {
+            return;
+        }
         var success = false;
         var breaker = 0;
         if (Game.player.z == this.z) {
@@ -53,9 +57,28 @@ var GrowMixin = function(obj,growChance) {
     obj.isPlant=true;
     obj.growChance = growChance;
     obj.act = function () {
+        if (!this.active) {
+            return;
+        }
         var success;
         if (ROT.RNG.getUniform()<=growChance) {
-            let tryPos=[Math.floor(ROT.RNG.getUniform() * 3) - 1, Math.floor(ROT.RNG.getUniform() * 3) - 1];
+            //let tryPos=[Math.floor(ROT.RNG.getUniform() * 3) - 1, Math.floor(ROT.RNG.getUniform() * 3) - 1];
+            var tryPos;
+            switch (Math.floor(ROT.RNG.getUniform() * 4)) {
+                default:
+                case 0:
+                tryPos=[1,0];
+                break;
+                case 1:
+                tryPos=[-1,0];
+                break;
+                case 2:
+                tryPos=[0,1];
+                break;
+                case 3:
+                tryPos=[0,-1];
+                break;
+            };
             success=this.step(tryPos[0],tryPos[1],true);
             if (success) {
                 let parts=success.split(',');
@@ -65,7 +88,11 @@ var GrowMixin = function(obj,growChance) {
                 Game.scheduler.add(EntityMaker.makeByName(this.name,x,y,z),true);
             }
         }
-    }
+    };
+    obj.actOn = function () {
+        Game.map[this.getKey()].entity=null;
+        this.active=false;
+    };
 };
 
 Entity.prototype.step = function(dx,dy,justCheck=false) {
