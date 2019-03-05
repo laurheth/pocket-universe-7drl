@@ -7,6 +7,7 @@ function Entity (x,y,z,char,color,name, lightPasses=true) {
     this.color=color;
     this.name=name;
     this.lightPasses=lightPasses;
+    this.isPlant=false;
     Game.map[x+','+y+','+z].entity=this;
 };
 
@@ -23,27 +24,51 @@ Entity.prototype.getKey = function() {
 };
 
 Entity.prototype.act = function() {
-    var success=false;
-    var breaker=0;
-    if (Game.player.z == this.z) {
-        this.targetDir=[Math.sign(-this.x+Game.player.x),Math.sign(-this.y+Game.player.y)];
-        //this.targetPos=[Game.player.x,Game.player.y];
-    }
-    while (!success && breaker<10) {
-        breaker++;
-        if (this.targetDir==null) {
-            success=this.step(Math.floor(ROT.RNG.getUniform() * 3) - 1 , Math.floor(ROT.RNG.getUniform() * 3) - 1);
+};
+
+var ChaseMixin = function(obj) {
+    obj.act = function () {
+        var success = false;
+        var breaker = 0;
+        if (Game.player.z == this.z) {
+            this.targetDir = [Math.sign(-this.x + Game.player.x), Math.sign(-this.y + Game.player.y)];
+            //this.targetPos=[Game.player.x,Game.player.y];
         }
-        else {
-            success=this.step(this.targetDir[0],this.targetDir[1]);
-            if (!success) {
-                this.targetDir=null;
+        while (!success && breaker < 10) {
+            breaker++;
+            if (this.targetDir == null) {
+                success = this.step(Math.floor(ROT.RNG.getUniform() * 3) - 1, Math.floor(ROT.RNG.getUniform() * 3) - 1);
+            }
+            else {
+                success = this.step(this.targetDir[0], this.targetDir[1]);
+                if (!success) {
+                    this.targetDir = null;
+                }
             }
         }
     }
 };
 
-Entity.prototype.step = function(dx,dy) {
+var GrowMixin = function(obj,growChance) {
+    obj.isPlant=true;
+    obj.growChance = growChance;
+    obj.act = function () {
+        var success;
+        if (ROT.RNG.getUniform()<=growChance) {
+            let tryPos=[Math.floor(ROT.RNG.getUniform() * 3) - 1, Math.floor(ROT.RNG.getUniform() * 3) - 1];
+            success=this.step(tryPos[0],tryPos[1],true);
+            if (success) {
+                let parts=success.split(',');
+                let x=parseInt(parts[0]);
+                let y=parseInt(parts[1]);
+                let z=parseInt(parts[2]);
+                Game.scheduler.add(EntityMaker.makeByName(this.name,x,y,z),true);
+            }
+        }
+    }
+};
+
+Entity.prototype.step = function(dx,dy,justCheck=false) {
     //console.log(dx+','+dy);
     var newKey;
     if (((this.x+dx)+','+(this.y+dy)+','+this.z) in Game.map && Game.map[((this.x+dx)+','+(this.y+dy)+','+this.z)].passThrough()) {
@@ -58,7 +83,7 @@ Entity.prototype.step = function(dx,dy) {
         newKey=((this.x+dx)+','+(this.y+dy)+','+this.z);
     }
     else {
-        return false;
+        return null;
     }
 
     if (Game.map[newKey].contains instanceof Connection) {
@@ -71,22 +96,47 @@ Entity.prototype.step = function(dx,dy) {
         }
         newKey=Game.map[newKey].contains.getKey(whichSide);
         if (Game.map[newKey].passThrough()) {
-            Game.map[this.getKey()].entity=null;
-            let parts=newKey.split(',');
-            this.x=parseInt(parts[0]);
-            this.y=parseInt(parts[1]);
-            this.z=parseInt(parts[2]);
-            Game.map[newKey].entity=this;
+            if (!justCheck) {
+                Game.map[this.getKey()].entity=null;
+            
+                let parts=newKey.split(',');
+                this.x=parseInt(parts[0]);
+                this.y=parseInt(parts[1]);
+                this.z=parseInt(parts[2]);
+            
+                Game.map[newKey].entity=this;
+            }
         }
         else {
-            return false;
+            return null;
         }
     }
     else {
-        Game.map[this.getKey()].entity=null;
-        Game.map[newKey].entity=this;
-        this.x+=dx;
-        this.y+=dy;
+        if (!justCheck) {
+            Game.map[this.getKey()].entity=null;
+            Game.map[newKey].entity=this;
+        
+            this.x+=dx;
+            this.y+=dy;
+        }
     }
-    return true;
+    return newKey;
+};
+
+var EntityMaker = {
+    makeByName: function(name,x,y,z) {
+        var newThing;//=null;
+        switch(name) {
+            default:
+            case 'Goblin':
+            newThing = new Entity(x,y,z,'g','#0f0','Goblin',true);
+            ChaseMixin(newThing);
+            break;
+            case 'Plant':
+            newThing = new Entity(x,y,z,'P','#0f0','Plant',true);
+            GrowMixin(newThing,0.2);
+            break;
+        }
+        return newThing;
+    },
 };

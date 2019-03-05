@@ -137,7 +137,7 @@ var Game = {
         let px = parseInt(parts[0]);
         let py = parseInt(parts[1]);
         let pz = parseInt(parts[2]);
-        return new Entity(px,py,pz,'g','#0f0','Goblin',true);
+        return EntityMaker.makeByName('Plant',px,py,pz);//new Entity(px,py,pz,'g','#0f0','Goblin',true);
     },
 
     _drawVisible: function() {
