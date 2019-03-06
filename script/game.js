@@ -59,9 +59,9 @@ var Game = {
 
         this.scheduler = new ROT.Scheduler.Simple();
         this.scheduler.add(this.player, true);
-        this.scheduler.add(this._addEntity('Plant'),true);
+        this.scheduler.add(this._addEntity('Goblin'),true);
         this.scheduler.add(this._addEntity('Volcano'),true);
-        this.scheduler.add(this._addEntity('Fountain'),true);
+        //this.scheduler.add(this._addEntity('Fountain'),true);
         this.scheduler.add(TileManager,true);
         this.engine = new ROT.Engine(this.scheduler);
         this.engine.start();
@@ -240,8 +240,8 @@ var Game = {
         return true;
     },
 
-    sendMessage: function(message,local=false, key='0,0,0',style="") {
-        if (this.lastMessage.indexOf(message)>=0) {
+    sendMessage: function(message,local=false, key='0,0,0',style="",important=false) {
+        if (!important && this.lastMessage.indexOf(message)>=0) {
             return;
         }
         if (local) {
@@ -257,7 +257,7 @@ var Game = {
     },
 
     statusMessage: function(message,status) {
-        this.sendMessage(message,false,"",status);
+        this.sendMessage(message,false,"",status,true);
     },
 
 };
@@ -275,6 +275,19 @@ function Player (x, y, z) {
 
 Player.prototype.seriousThreshold = {
     'Drowning': [5,'Swimming'],
+};
+
+Player.prototype.wound = function(dmg) {
+    if (dmg == 0) {return;}
+    if ('Bleeding' in this.status) {
+        this.status.Bleeding -= dmg;
+    }
+    else {
+        this.status.Bleeding = 10-dmg;
+    }
+    if (this.status.Bleeding<5) {
+        Game.statusMessage("You are bleeding heavily!",'Bleeding');
+    }
 };
 
 Player.prototype.printStatus = function() {
@@ -339,7 +352,33 @@ Player.prototype.getColor = function() {
 
 Player.prototype.getKey = function() {
     return this.x+','+this.y+','+this.z;
-}
+};
+
+Player.prototype.openPortal = function(openClose) {
+    console.log(openClose);
+    var success=false;
+    for (let i=-1;i<2;i++) {
+        for (let j=-1;j<2;j++) {
+            // force orthogonal directions
+            if (i!=0 && j!=0) {continue;}
+            if (i==0 && j==0) {continue;}
+            let testKey=(this.x+i)+','+(this.y+j)+','+this.z;
+            if (testKey in Game.map && Game.map[testKey].contains != null && Game.map[testKey].contains instanceof Connection && Game.map[testKey].contains.open != openClose) {
+                Game.map[testKey].contains.open = openClose;
+                success=true;
+            }
+        }
+    }
+    if (success) {
+        if (openClose) {
+            Game.sendMessage("You open the portal.");
+        }
+        else {
+            Game.sendMessage("You close the portal.");
+        }
+    }
+    return success;
+};
 
 Player.prototype.act = function () {
     Game.engine.lock();
@@ -410,6 +449,31 @@ Player.prototype.act = function () {
         }
     }
 
+    // BLOOD logic
+    if ('Bleeding' in this.status) {
+        console.log(this.status.Bleeding);
+        if (this.status.Bleeding > 10) {
+            delete this.status.Bleeding;
+        }
+        else {
+            if (this.status.Bleeding > 5) {
+                this.status.Bleeding++;
+                if (Math.floor(ROT.RNG.getUniform() * this.status.Bleeding) > 5) {
+                    this.status.Bleeding++;
+                }
+            }
+            else {
+                if (ROT.RNG.getUniform() < (0.1 * this.status.Bleeding)) {
+                    this.status.Bleeding++;
+                }
+                if (ROT.RNG.getUniform() < (0.1 * this.status.Bleeding)) {
+                    this.status.Bleeding++;
+                }
+            }
+            Game.map[this.getKey()].color = '#f00';
+        }
+    }
+
     this.printStatus();
     Game._drawVisible();
     //Game.sendMessage("Something happened!");
@@ -424,18 +488,54 @@ Player.prototype.handleEvent = function (e) {
     }
     var keyMap = {};
     keyMap[38] = 0;
+    keyMap[104] = 0;
     keyMap[33] = 1;
+    keyMap[105] = 1;
     keyMap[39] = 2;
+    keyMap[102] = 2;
     keyMap[34] = 3;
+    keyMap[99] = 3;
     keyMap[40] = 4;
+    keyMap[98] = 4;
     keyMap[35] = 5;
+    keyMap[97] = 5;
     keyMap[37] = 6;
+    keyMap[100] = 6;
     keyMap[36] = 7;
+    keyMap[103] = 7;
 
     let code = e.keyCode;
+    /*if (!(code in keyMap)) {
+        return;
+    }*/
+
     if (!(code in keyMap)) {
+        var success = false;
+        switch (code) {
+            // wait
+            case 190:
+            case 101:
+            case 12:
+                success=true;
+            break;
+
+            // close portal
+            case 67:
+                success=this.openPortal(false);
+            break;
+            // open portal
+            case 79:
+                success=this.openPortal(true);
+            break;
+        }
+        if (success) {
+            window.removeEventListener("keydown", this);
+            Game.engine.unlock();
+        }
         return;
     }
+
+    // movement
     let diff = ROT.DIRS[8][keyMap[code]];
 
     var newX;

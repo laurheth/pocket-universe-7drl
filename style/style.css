@@ -59,6 +59,11 @@ li {
 .Freezing {
     color: cyan;
 }
+
+.Bleeding {
+    color: red;
+}
+
 .Dead {
     color: red;
     font-weight: bold;

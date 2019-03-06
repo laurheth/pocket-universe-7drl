@@ -6,12 +6,15 @@ function Entity (x,y,z,char,color,name, lightPasses=true) {
     this.soonToBeOnFire=false;
     this.active=true;
     this.targetDir=null;
+    //this.target=target;
     this.char=char;
     this.color=color;
     this.name=name;
     this.lightPasses=lightPasses;
     this.isPlant=false;
     this.burns=true;
+    this.violent=false;
+    this.dmg=0;
     Game.map[x+','+y+','+z].entity=this;
 };
 
@@ -85,9 +88,14 @@ Entity.prototype.common = function() {
         //Game.sendMessage("burning");
         if (this.onFire > 10) {
             Game.map[this.getKey()].entity = null;
-            Game.map[this.getKey()].color='#666';
             this.active = false;
-            Game.sendMessage("The " + this.name.toLowerCase() + " burns away.", true, this.getKey());
+            Game.map[this.getKey()].color='#666';
+            if (this.isPlant) {
+                Game.sendMessage("The " + this.name.toLowerCase() + " burns away.", true, this.getKey());
+            }
+            else {
+                Game.sendMessage("The " + this.name.toLowerCase() + " burns to death.", true, this.getKey());
+            }
             return;
         }
         if (Game.map[this.getKey()].contains != null && Game.map[this.getKey()].contains instanceof Connection) {
@@ -105,7 +113,10 @@ Entity.prototype.common = function() {
     }
 }
 
-var ChaseMixin = function(obj) {
+var ChaseMixin = function(obj,verb="attacks",dmg) {
+    obj.dmg=dmg;
+    obj.violent=true;
+    obj.verb=verb;
     obj.act = function () {
         this.common();
         if (!this.active) {
@@ -132,7 +143,17 @@ var ChaseMixin = function(obj) {
                 }
             }
         }
-    }
+    };
+    obj.actOn = function() {
+        // shove!
+        var direction = [Math.sign(this.x - Game.player.x), Math.sign(this.y - Game.player.y)];
+        Game.sendMessage("You push the "+this.name.toLowerCase()+" away!");
+        this.step(direction[0], direction[1]);
+        this.step(direction[0], direction[1]);
+        if (ROT.RNG.getUniform()>0.5) {
+            this.step(direction[0], direction[1]);
+        }
+    };
 };
 
 var WaterMixin = function(obj,targWater,liquidType) {
@@ -229,7 +250,15 @@ var MeltMixin = function (obj, liquidType) {
 
 Entity.prototype.step = function(dx,dy,justCheck=false) {
     //console.log(dx+','+dy);
-    var newKey;
+    var newKey=((this.x+dx)+','+(this.y+dy)+','+this.z);
+
+    if (this.violent && newKey in Game.map && Game.map[newKey].entity != null && Game.map[newKey].entity == Game.player) {
+        //Game.sendMessage("The "+this.name.toLowerCase()+" attacks you!");
+        Game.statusMessage("The "+this.name.toLowerCase()+" "+this.verb+" you!",'Wounded');
+        Game.player.wound(this.dmg);
+        return newKey;
+    }
+
     if (((this.x+dx)+','+(this.y+dy)+','+this.z) in Game.map && Game.map[((this.x+dx)+','+(this.y+dy)+','+this.z)].passThrough()) {
         newKey=((this.x+dx)+','+(this.y+dy)+','+this.z);
     }
@@ -289,7 +318,8 @@ var EntityMaker = {
             default:
             case 'Goblin':
             newThing = new Entity(x,y,z,'g','#0f0','Goblin',true);
-            ChaseMixin(newThing);
+            ChaseMixin(newThing,'attacks',2);
+            HurtByLiquidMixin(newThing,1);
             break;
             case 'Plant':
             newThing = new Entity(x,y,z,'P','#0f0','Plant',true);
