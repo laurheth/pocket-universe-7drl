@@ -109,9 +109,12 @@ var DestructMixin = function(obj) {
 };
 
 var HurtByLiquidMixin = function(obj,liquidType) {
-    obj.liquidType=liquidType;
-    obj.checkForLiquid = function () {
-
+    obj.hurtByLiquidType=liquidType;
+    obj.hurtByLiquid = function (liquid) {
+        if (liquid == this.hurtByLiquidType) {
+            Game.map[this.getKey()].entity=null;
+            this.active=false;
+        }
     };
 }
 
@@ -183,6 +186,7 @@ var EntityMaker = {
             newThing = new Entity(x,y,z,'P','#0f0','Plant',true);
             GrowMixin(newThing,0.2);
             DestructMixin(newThing);
+            HurtByLiquidMixin(newThing,1);
             break;
             case 'Fountain':
             newThing = new Entity(x,y,z,'^','#0ff','Fountain',true);

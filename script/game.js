@@ -46,7 +46,7 @@ var Game = {
 
         this.scheduler = new ROT.Scheduler.Simple();
         this.scheduler.add(this.player, true);
-        this.scheduler.add(this._addEntity('Fountain'),true);
+        this.scheduler.add(this._addEntity('Plant'),true);
         this.scheduler.add(this._addEntity('Volcano'),true);
         this.scheduler.add(TileManager,true);
         this.engine = new ROT.Engine(this.scheduler);
@@ -469,7 +469,7 @@ var TileManager = {
                         }*/
                         var testTile = (j + x) + ',' + (jj + y) + ',' + z;
                         //console.log('?'+j+','+jj+' '+testTile+','+y);
-                        if (testTile in Game.map && Game.map[testTile].passThrough()) {
+                        if (testTile in Game.map && Game.map[testTile].liquidThrough()) {
                             if (Game.map[testTile].contains instanceof Connection) {
                                 var whichSide;
                                 if (testTile == Game.map[testTile].contains.getKey(0)) {
@@ -499,6 +499,9 @@ var TileManager = {
                                 else {
                                     Game.map[testTile].nextWater+=flowRate;
                                     Game.map[tiles[i]].nextWater-=flowRate;
+                                    if (Game.map[testTile].entity != null && 'hurtByLiquid' in Game.map[testTile].entity) {
+                                        Game.map[testTile].entity.hurtByLiquid(Game.map[tiles[i]].liquidType);
+                                    }
                                 }
                             }
                         }
@@ -571,6 +574,17 @@ function Tile(char,color,passable,seethrough,contains,direction,water=0,liquidTy
         else {
             return this.contains.passThrough();
         }
+    }
+    this.liquidThrough=function() {
+        if (this.entity != null ) {
+            if ('hurtByLiquid' in this.entity) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        return this.passThrough();
     }
     this.getChar=function() {
         if (this.entity != null) {
