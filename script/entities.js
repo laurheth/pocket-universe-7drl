@@ -102,10 +102,12 @@ var GrowMixin = function(obj,growChance) {
     };
 };
 
-var DestructMixin = function(obj) {
+var DestructMixin = function(obj,destroyMethod="destroy") {
+    obj.destroyMethod=destroyMethod;
     obj.actOn = function () {
         Game.map[this.getKey()].entity=null;
         this.active=false;
+        Game.sendMessage("You "+this.destroyMethod+" the "+this.name.toLowerCase()+"!");
     };
 };
 
@@ -197,7 +199,7 @@ var EntityMaker = {
             case 'Plant':
             newThing = new Entity(x,y,z,'P','#0f0','Plant',true);
             GrowMixin(newThing,0.2);
-            DestructMixin(newThing);
+            DestructMixin(newThing,"cut down");
             HurtByLiquidMixin(newThing,1);
             break;
             case 'Fountain':
