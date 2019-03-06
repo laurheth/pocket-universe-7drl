@@ -276,6 +276,7 @@ Player.prototype.getColor = function() {
 Player.prototype.act = function () {
     Game._drawVisible();
     Game.engine.lock();
+    Game.lastMessage=[""];
     Game.currentTurn++;
     Game.playerInfo.innerHTML="Lauren";
     Game.dungeonInfo.innerHTML="Dungeon Level 1"+"<br>"+"The Cold Expanse";
@@ -608,7 +609,6 @@ function Tile(char,color,passable,seethrough,contains,direction,water=0,liquidTy
         return this.direction;
     }
     this.lightPasses=function() {
-        this.lastSeen=Game.currentTurn;
         if (this.entity!=null) {
             if ('lightPasses' in this.entity) {
                 return this.entity.lightPasses;
@@ -644,6 +644,7 @@ function Tile(char,color,passable,seethrough,contains,direction,water=0,liquidTy
         return this.passThrough();
     }
     this.getChar=function() {
+        this.lastSeen=Game.currentTurn;
         if (this.entity != null) {
             return this.entity.getChar();
         }
