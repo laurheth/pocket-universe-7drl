@@ -67,6 +67,11 @@ var Game = {
         this.engine.start();
     },
 
+    burnColor: function() {
+        let colorOpts=['#f00','#fa0','#ff0'];
+        return ROT.RNG.getItem(colorOpts);
+    },
+
     _generateMap: function () {
         this.freeCells = [];
         this.walls = [];
@@ -263,6 +268,7 @@ function Player (x, y, z) {
     this.z = z;
     this.hurtByLiquidType=-1;
     this.alive=true;
+    this.burns=true;
     this.status={};//'Burning':10,'Drowning':10,'Freezing':10};
     //this.draw();
 };
@@ -322,6 +328,12 @@ Player.prototype.getChar = function() {
 };
 
 Player.prototype.getColor = function() {
+    if (!this.alive) {
+        return '#f00';
+    }
+    else if ('Burning' in this.status) {
+        return Game.burnColor();
+    }
     return '#fff';
 };
 
@@ -330,7 +342,6 @@ Player.prototype.getKey = function() {
 }
 
 Player.prototype.act = function () {
-    Game._drawVisible();
     Game.engine.lock();
     Game.playerName.innerHTML="Lauren";
     Game.dungeonInfo.innerHTML="Dungeon Level "+Game.level+"<br>";//+Game.roomNames[this.z];
@@ -341,12 +352,20 @@ Player.prototype.act = function () {
     // Lava logic
     if (this.getKey() in Game.map && Game.map[this.getKey()].liquidType==1 && Game.map[this.getKey()].water > Game.minWater) {
         //Game.sendMessage("The lava sets you aflame!",false,"",'Burning');
-        Game.statusMessage("The lava has set you aflame!",'Burning');
-        if ('Burning' in this.status) {
-            this.status.Burning--;
+        if (Game.map[this.getKey()].lake) {
+            Game.statusMessage("You fall into the deep lava.",'Burning');
+            Game.statusMessage("",'Burning');
+            this.status.Burning=-1;
         }
         else {
-            this.status.Burning=5;
+            if ('Burning' in this.status) {
+                Game.statusMessage("The lava burns!!",'Burning');
+                this.status.Burning-=3;
+            }
+            else {
+                Game.statusMessage("The lava has set you aflame!",'Burning');
+                this.status.Burning=10;
+            }
         }
     }
 
@@ -356,7 +375,7 @@ Player.prototype.act = function () {
             delete this.status.Burning;
             Game.sendMessage("The water put out the flames.");
         }
-        if (Game.map[this.getKey()].water > Game.deepThreshold || Game.map[this.getKey()].lake) {
+        if ((Game.map[this.getKey()].water > Game.deepThreshold || Game.map[this.getKey()].lake) && Game.map[this.getKey()].liquidType==0) {
             if ('Drowning' in this.status) {
                 if (this.status.Drowning-1<=this.seriousThreshold.Drowning[0]) {
                     Game.statusMessage("You are drowning!",'Drowning');
@@ -380,10 +399,19 @@ Player.prototype.act = function () {
         }
     }
     else {
-
+        if ('Drowning' in this.status) {
+            if (this.status.Drowning>=this.seriousThreshold.Drowning[0]) {
+                Game.sendMessage("You can breath again.");
+            }
+            else {
+                Game.sendMessage("You gasp for breath!");
+            }
+            delete this.status.Drowning;
+        }
     }
 
     this.printStatus();
+    Game._drawVisible();
     //Game.sendMessage("Something happened!");
     Game.lastMessage=[""];
     Game.currentTurn++;
@@ -460,7 +488,7 @@ Player.prototype.handleEvent = function (e) {
             return;
         }
     }
-    if (Game.map[newKey].contains != null && Game.map[newKey].contains instanceof Connection) {
+    /*if (Game.map[newKey].contains != null && Game.map[newKey].contains instanceof Connection) {
         var whichSide;
         if (newKey == Game.map[newKey].contains.getKey(0)) {
             whichSide=1;
@@ -473,7 +501,7 @@ Player.prototype.handleEvent = function (e) {
         newY=parseInt(parts[1]);
         newZ=parseInt(parts[2]);
         //console.log("newZ?");
-    }
+    }*/
     //Game.display.draw(this.x, this.y, Game.map[this.x + ',' + this.y]);
 
     Game.map[this.x+','+this.y+','+this.z].entity=null;
@@ -681,7 +709,7 @@ var TileManager = {
                 }
             }
             if (Game.map[tiles[i]].solidify) {
-                console.log('solidifying?');
+                //console.log('solidifying?');
                 Game.map[tiles[i]].solidify=false;
                 Game.map[tiles[i]].color='#666';
                 Game.map[tiles[i]].water=0;

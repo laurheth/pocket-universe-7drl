@@ -2,6 +2,8 @@ function Entity (x,y,z,char,color,name, lightPasses=true) {
     this.x=x;
     this.y=y;
     this.z=z;
+    this.onFire=-1;
+    this.soonToBeOnFire=false;
     this.active=true;
     this.targetDir=null;
     this.char=char;
@@ -9,6 +11,7 @@ function Entity (x,y,z,char,color,name, lightPasses=true) {
     this.name=name;
     this.lightPasses=lightPasses;
     this.isPlant=false;
+    this.burns=true;
     Game.map[x+','+y+','+z].entity=this;
 };
 
@@ -17,6 +20,9 @@ Entity.prototype.getChar = function() {
 };
 
 Entity.prototype.getColor = function() {
+    if (this.onFire>=0) {
+        return Game.burnColor();
+    }
     return this.color;
 };
 
@@ -27,8 +33,81 @@ Entity.prototype.getKey = function() {
 Entity.prototype.act = function() {
 };
 
+Entity.prototype.spreadFire = function(key) {
+    let parts = key.split(',');
+    px=parseInt(parts[0]);
+    py=parseInt(parts[1]);
+    pz=parseInt(parts[2]);
+    for (let i = -1; i < 2; i++) {
+        for (let j = -1; j < 2; j++) {
+            var repeat=false;
+            for (let q = 0; q < 2; q++) {
+                var testKey = (px + i) + ',' + (py + j) + ',' + pz;
+                if (testKey in Game.map) {
+                    if (Game.map[testKey].contains != null && Game.map[testKey].contains instanceof Connection) {
+                        repeat=true;
+                        if (q==0) {
+                            if (Game.map[testKey].contains.getKey(0) == testKey) {
+                                testKey=Game.map[testKey].contains.getKey(1);
+                            }
+                            else {
+                                testKey=Game.map[testKey].contains.getKey(0);
+                            }
+                        }
+                    }
+                    if (Game.map[testKey].entity != null && Game.map[testKey].entity.burns && (Game.map[testKey].liquidType != 0 || Game.map[testKey].water<Game.minWater)) {
+                        if (Game.map[testKey].entity != Game.player && Game.map[testKey].entity.onFire<0) {
+                            Game.map[testKey].entity.soonToBeOnFire = true;
+                            Game.sendMessage("The fire is spreading!", true, testKey);
+                        }
+                        else if (Game.map[testKey].entity == Game.player) {
+                            if (!('Burning' in Game.player.status)) {
+                                Game.statusMessage("You have caught on fire!", 'Burning');
+                                Game.player.status.Burning = 10;
+                            }
+                        }
+                    }
+                }
+                if (!repeat) {
+                    break;
+                }
+            }
+        }
+    }
+};
+
+Entity.prototype.common = function() {
+    if (!this.active) {return;}
+    if (Game.map[this.getKey()].burns && Game.map[this.getKey()].liquidType==1 && Game.map[this.getKey()].water>Game.minWater) {
+        this.soonToBeOnFire=true;
+    }
+    if (this.onFire >= 0) {
+        //Game.sendMessage("burning");
+        if (this.onFire > 10) {
+            Game.map[this.getKey()].entity = null;
+            Game.map[this.getKey()].color='#666';
+            this.active = false;
+            Game.sendMessage("The " + this.name.toLowerCase() + " burns away.", true, this.getKey());
+            return;
+        }
+        if (Game.map[this.getKey()].contains != null && Game.map[this.getKey()].contains instanceof Connection) {
+            for (let q=0;q<2;q++) {
+                this.spreadFire(Game.map[this.getKey()].contains.getKey(q));
+            }
+        }
+        else {
+            this.spreadFire(this.getKey());
+        }
+        this.onFire++;
+    }
+    if (this.soonToBeOnFire && this.onFire<0) {
+        this.onFire=Math.floor(ROT.RNG.getUniform()*5);
+    }
+}
+
 var ChaseMixin = function(obj) {
     obj.act = function () {
+        this.common();
         if (!this.active) {
             return;
         }
@@ -38,7 +117,10 @@ var ChaseMixin = function(obj) {
             this.targetDir = [Math.sign(-this.x + Game.player.x), Math.sign(-this.y + Game.player.y)];
             //this.targetPos=[Game.player.x,Game.player.y];
         }
-        while (!success && breaker < 10) {
+        if (this.onFire>=0) {
+            this.targetDir=null;
+        }
+        while (!success && breaker < 5) {
             breaker++;
             if (this.targetDir == null) {
                 success = this.step(Math.floor(ROT.RNG.getUniform() * 3) - 1, Math.floor(ROT.RNG.getUniform() * 3) - 1);
@@ -57,6 +139,9 @@ var WaterMixin = function(obj,targWater,liquidType) {
     obj.liquidType=liquidType;
     obj.targWater=targWater;
     obj.act = function () {
+        if (!this.active) {
+            return;
+        }
         Game.map[this.getKey()].liquidType=this.liquidType;
         Game.map[this.getKey()].water+=this.targWater;
         Game.map[this.getKey()].nextWater+=this.targWater;
@@ -67,7 +152,8 @@ var GrowMixin = function(obj,growChance) {
     obj.isPlant=true;
     obj.growChance = growChance;
     obj.act = function () {
-        if (!this.active) {
+        this.common();
+        if (!this.active || this.onFire>=0) {
             return;
         }
         var success;
@@ -118,8 +204,17 @@ var HurtByLiquidMixin = function(obj,liquidType) {
             if ('melt' in this) {
                 this.melt();
             }
-            Game.map[this.getKey()].entity=null;
-            this.active=false;
+            if (this.hurtByLiquidType==1 && this.burns) {
+                if (this.onFire<0) {
+                    Game.sendMessage("The "+this.name.toLowerCase()+" is burning in lava!",true,this.getKey());
+                    this.onFire=0;
+                }
+            }
+            else {
+                Game.sendMessage("The "+this.name.toLowerCase()+" was destroyed.",true,this.getKey());
+                Game.map[this.getKey()].entity=null;
+                this.active=false;
+            }
         }
     };
 }
