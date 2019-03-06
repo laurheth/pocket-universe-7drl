@@ -108,6 +108,13 @@ var DestructMixin = function(obj) {
     };
 };
 
+var HurtByLiquidMixin = function(obj,liquidType) {
+    obj.liquidType=liquidType;
+    obj.checkForLiquid = function () {
+
+    };
+}
+
 Entity.prototype.step = function(dx,dy,justCheck=false) {
     //console.log(dx+','+dy);
     var newKey;
@@ -179,11 +186,11 @@ var EntityMaker = {
             break;
             case 'Fountain':
             newThing = new Entity(x,y,z,'^','#0ff','Fountain',true);
-            WaterMixin(newThing,50,0);
+            WaterMixin(newThing,100,0);
             break;
             case 'Volcano':
             newThing = new Entity(x,y,z,'^','#f00','Volcano',true);
-            WaterMixin(newThing,40,1);
+            WaterMixin(newThing,60,1);
             break;
             case 'Obsidian':
             newThing = new Entity(x,y,z,'#','#ccc','Obsidian',false);

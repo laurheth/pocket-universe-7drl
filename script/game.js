@@ -486,7 +486,7 @@ var TileManager = {
                                 //console.log("add some water");
                                 if (Game.map[testTile].liquidType != Game.map[tiles[i]].liquidType) {
                                     if (Game.map[testTile].water > Game.minWater) {
-                                        //Game.map[tiles[i]].solidify=true;
+                                        Game.map[tiles[i]].solidify=true;
                                         Game.map[testTile].solidify=true;
                                         //Game.map[testTile].color='#666';
                                         //Game.map[tiles[i]].color='#666';
@@ -515,14 +515,14 @@ var TileManager = {
                 Game.map[tiles[i]].color='#666';
                 Game.map[tiles[i]].water=0;
                 Game.map[tiles[i]].nextWater=0;
-                if (Game.map[tiles[i]].entity==null && Game.map[tiles[i]].contains==null) {
+                /*if (Game.map[tiles[i]].entity==null && Game.map[tiles[i]].contains==null) {
                     let key = tiles[i];
                     let parts = key.split(',');
                     let px = parseInt(parts[0]);
                     let py = parseInt(parts[1]);
                     let pz = parseInt(parts[2]);
                     Game.scheduler.add(EntityMaker.makeByName('Obsidian',px,py,pz));
-                }
+                }*/
             }
         }
     }
