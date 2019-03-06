@@ -12,7 +12,8 @@ var Game = {
     walls: null,
     freeCells: null,
     minWater: 10,
-    playerInfo: null,
+    playerName: null,
+    statusList: null,
     dungeonInfo: null,
     messages: null,
     currentTurn: 0,
@@ -21,7 +22,8 @@ var Game = {
     init: function () {
         this.display = new ROT.Display({fontSize:19,fontFamily:'Overpass Mono, monospace'});
         document.getElementById('gameContainer').appendChild(this.display.getContainer());
-        this.playerInfo = document.getElementById('playerInfo');
+        this.playerName = document.getElementById('playerName');
+        this.statusList = document.getElementById('statusList');
         this.dungeonInfo = document.getElementById('dungeonInfo');
         this.messages = document.getElementById('messages');
         this._generateMap();
@@ -229,7 +231,7 @@ var Game = {
         return true;
     },
 
-    sendMessage: function(message, local=false, key='0,0,0') {
+    sendMessage: function(message,local=false, key='0,0,0',style="") {
         if (this.lastMessage.indexOf(message)>=0) {
             return;
         }
@@ -239,9 +241,14 @@ var Game = {
             }
         }
         let newMessage = document.createElement("P");
+        newMessage.className=style;
         newMessage.appendChild(document.createTextNode('> '+message));
         this.messages.appendChild(newMessage);
         this.lastMessage.push(message);
+    },
+
+    statusMessage: function(message,status) {
+        this.sendMessage(message,false,"",status);
     },
 
 };
@@ -250,9 +257,37 @@ function Player (x, y, z) {
     this.x = x;
     this.y = y;
     this.z = z;
+    this.alive=true;
+    this.status={};//'Burning':10,'Drowning':10,'Freezing':10};
     //this.draw();
 };
 
+Player.prototype.printStatus = function() {
+    // clear old statuses
+    while (Game.statusList.firstChild) {
+        Game.statusList.removeChild(Game.statusList.firstChild);
+    }
+    // Print new ones
+    var stats = Object.keys(this.status);
+    for (let i=0;i<stats.length;i++) {
+        this.status[stats]--;
+        // Succumb to status effect
+        if (this.status[stats]<0) {
+            this.status={};
+            this.status.Dead='10';
+            this.alive=false;
+            Game.statusMessage("You die...",'Dead');
+            this.printStatus();
+            return;
+        }
+    }
+    for (let i=0;i<stats.length;i++) {
+        var newStatus = document.createElement("LI");
+        newStatus.appendChild(document.createTextNode(stats[i]));
+        newStatus.className=stats[i];
+        Game.statusList.appendChild(newStatus);
+    }
+};
 /*Player.prototype.draw = function () {
     Game.display.draw(Game.offset[0], Game.offset[1], "@", "#fff");
 };*/
@@ -273,18 +308,39 @@ Player.prototype.getColor = function() {
     return '#fff';
 };
 
+Player.prototype.getKey = function() {
+    return this.x+','+this.y+','+this.z;
+}
+
 Player.prototype.act = function () {
     Game._drawVisible();
     Game.engine.lock();
+    Game.playerName.innerHTML="Lauren";
+    Game.dungeonInfo.innerHTML="Dungeon Level 1"+"<br>"+"The Cold Expanse";
+
+    // Check environment
+    if (this.getKey() in Game.map && Game.map[this.getKey()].liquidType==1 && Game.map[this.getKey()].water > Game.minWater) {
+        //Game.sendMessage("The lava sets you aflame!",false,"",'Burning');
+        Game.statusMessage("The lava has set you aflame!",'Burning');
+        if ('Burning' in this.status) {
+            this.status.Burning--;
+        }
+        else {
+            this.status.Burning=5;
+        }
+    }
+
+    this.printStatus();
+    //Game.sendMessage("Something happened!");
     Game.lastMessage=[""];
     Game.currentTurn++;
-    Game.playerInfo.innerHTML="Lauren";
-    Game.dungeonInfo.innerHTML="Dungeon Level 1"+"<br>"+"The Cold Expanse";
-    //Game.sendMessage("Something happened!");
     window.addEventListener("keydown", this);
 };
 
 Player.prototype.handleEvent = function (e) {
+    if (!this.alive) {
+        return;
+    }
     var keyMap = {};
     keyMap[38] = 0;
     keyMap[33] = 1;

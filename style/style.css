@@ -36,3 +36,30 @@ p {
     height: 100vh;
     overflow: hidden;
 }
+
+#statusList {
+    display: flex;
+    flex-direction: row;
+    padding: 0;
+    margin: 0;
+}
+
+li {
+    list-style: none;
+    margin: 0 0.3em 0 0;
+    padding: 0;
+}
+
+.Burning {
+    color: orangered;
+}
+.Drowning{
+    color: blue;
+}
+.Freezing {
+    color: cyan;
+}
+.Dead {
+    color: red;
+    font-weight: bold;
+}
