@@ -288,14 +288,20 @@ Player.prototype.handleEvent = function (e) {
         //if (!(newKey in Game.map) || !(Game.map[newKey].passThrough())) {
         if (!(newKey in Game.map) || !(Game.map[newKey].passThrough())) {
             if (newKey in Game.map) {
-                if (Game.map[newKey].contains != null) {
+                if (Game.map[newKey].contains != null && 'actOn' in Game.map[newKey].contains) {
                     Game.map[newKey].contains.actOn();
                     Game._drawVisible();
+                    window.removeEventListener("keydown", this);
+                    Game.engine.unlock();
+                    return;
                 }
                 else if (Game.map[newKey].entity != null) {
-                    if ('actOn' in Game.map[newKey].entity) {
+                    if ('actOn' in Game.map[newKey].entity && 'actOn' in Game.map[newKey].entity) {
                         Game.map[newKey].entity.actOn();
                         Game._drawVisible();
+                        window.removeEventListener("keydown", this);
+                        Game.engine.unlock();
+                        return;
                     }
                 }
             }
@@ -433,10 +439,23 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
     };
 
     this.passThrough=function() {
-        return this.open;
+        var toReturn=this.open;
+        for (let q=0;q<2;q++) {
+            if (Game.map[this.getKey(q)].entity != null && 'passThrough' in Game.map[this.getKey(q)].entity) {
+                toReturn &= Game.map[this.getKey(q)].entity.passThrough();
+            }
+        }
+        return toReturn;
     };
 
     this.actOn=function() {
+        if (this.open) {
+            for (let q=0;q<2;q++) {
+                if (Game.map[this.getKey(q)].entity != null && 'actOn' in Game.map[this.getKey(q)].entity) {
+                    Game.map[this.getKey(q)].entity.actOn();
+                }
+            }
+        }
 	    this.open=true;
     };
 };
@@ -512,6 +531,12 @@ var TileManager = {
         for (let i=0;i<tiles.length;i++) {
             Game.map[tiles[i]].water=Game.map[tiles[i]].nextWater;
             Game.map[tiles[i]].liquidType=Game.map[tiles[i]].nextLiquidType;
+            if (Game.map[tiles[i]].connection != null && Game.map[tiles[i]].connection instanceof Connection) {
+                for (let q=0;q<2;q++) {
+                    Game.map[Game.map[tiles][i].connection.getKey(q)].water = Game.map[tiles[i]].water;
+                    Game.map[Game.map[tiles][i].connection.getKey(q)].nextWater = Game.map[tiles[i]].nextWater;
+                }
+            }
             if (Game.map[tiles[i]].solidify) {
                 console.log('solidifying?');
                 Game.map[tiles[i]].solidify=false;

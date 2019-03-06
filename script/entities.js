@@ -112,10 +112,21 @@ var HurtByLiquidMixin = function(obj,liquidType) {
     obj.hurtByLiquidType=liquidType;
     obj.hurtByLiquid = function (liquid) {
         if (liquid == this.hurtByLiquidType) {
+            if ('melt' in this) {
+                this.melt();
+            }
             Game.map[this.getKey()].entity=null;
             this.active=false;
         }
     };
+}
+
+var MeltMixin = function (obj, liquidType) {
+    obj.meltInto = liquidType;
+    obj.melt = function () {
+        Game.map[this.getKey()].water=2*Game.minWater;
+        Game.map[this.getKey()].nextWater = Game.map[this.getKey()].water;
+    }
 }
 
 Entity.prototype.step = function(dx,dy,justCheck=false) {
@@ -191,14 +202,21 @@ var EntityMaker = {
             case 'Fountain':
             newThing = new Entity(x,y,z,'^','#0ff','Fountain',true);
             WaterMixin(newThing,100,0);
+            HurtByLiquidMixin(newThing,1);
             break;
             case 'Volcano':
             newThing = new Entity(x,y,z,'^','#f00','Volcano',true);
             WaterMixin(newThing,60,1);
+            HurtByLiquidMixin(newThing,0);
             break;
             case 'Obsidian':
             newThing = new Entity(x,y,z,'#','#ccc','Obsidian',false);
             DestructMixin(newThing);
+            break;
+            case 'Ice':
+            newThing = new Entity(x,y,z,'#','#0ff','Ice',false);
+            HurtByLiquidMixin(newThing,1); // melted by lava
+            MeltMixin(newThing,0);
             break;
         }
         return newThing;
