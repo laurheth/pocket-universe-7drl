@@ -273,27 +273,49 @@ Player.prototype.handleEvent = function (e) {
     }
     let diff = ROT.DIRS[8][keyMap[code]];
 
-    let newX = this.x + diff[0];
-    let newY = this.y + diff[1];
-    let newZ = this.z;
+    var newX;
+    var newY;
+    var newZ;
+    var newKey;
+    for (let i = 0; i < 2; i++) {
+        newX = this.x + diff[0];
+        newY = this.y + diff[1];
+        newZ = this.z;
 
     // check if valid
-    let newKey = newX + ',' + newY + ',' + newZ;
-    //if (!(newKey in Game.map) || !(Game.map[newKey].passThrough())) {
-    if (!(newKey in Game.map) || !(Game.map[newKey].passThrough())) {
-	    if (newKey in Game.map) {
-            if (Game.map[newKey].contains != null) {
-                Game.map[newKey].contains.actOn();
-                Game._drawVisible();
-            }
-            else if (Game.map[newKey].entity != null)  {
-                if ('actOn' in Game.map[newKey].entity) {
-                    Game.map[newKey].entity.actOn();
+        newKey = newX + ',' + newY + ',' + newZ;
+    
+        //if (!(newKey in Game.map) || !(Game.map[newKey].passThrough())) {
+        if (!(newKey in Game.map) || !(Game.map[newKey].passThrough())) {
+            if (newKey in Game.map) {
+                if (Game.map[newKey].contains != null) {
+                    Game.map[newKey].contains.actOn();
                     Game._drawVisible();
                 }
+                else if (Game.map[newKey].entity != null) {
+                    if ('actOn' in Game.map[newKey].entity) {
+                        Game.map[newKey].entity.actOn();
+                        Game._drawVisible();
+                    }
+                }
             }
-	    }
-        return;
+            if (i == 0 && Game.map[this.x + ',' + this.y + ',' + this.z].contains instanceof Connection) {
+                var whichSide;
+                if (this.x + ',' + this.y + ',' + this.z == Game.map[this.x + ',' + this.y + ',' + this.z].contains.getKey(0)) {
+                    whichSide = 1;
+                }
+                else {
+                    whichSide = 0;
+                }
+                Game.map[this.x + ',' + this.y + ',' + this.z].entity=null;
+                let parts = Game.map[this.x + ',' + this.y + ',' + this.z].contains.getKey(whichSide).split(',');
+                this.x = parseInt(parts[0]);
+                this.y = parseInt(parts[1]);
+                this.z = parseInt(parts[2]);
+                continue;
+            }
+            return;
+        }
     }
     if (Game.map[newKey].contains != null && Game.map[newKey].contains instanceof Connection) {
         var whichSide;
@@ -436,12 +458,15 @@ var TileManager = {
                 //var neighbourWater=0;
                 for (let j = -1; j < 2; j++) {
                     for (let jj = -1; jj < 2; jj++) {
-                        if (j == jj) {
+                        if (j==0 && jj==0) {
+                            continue;
+                        }
+                        /*if (j == jj) {
                             continue;
                         }
                         if (j != 0 && jj != 0) {
                             continue;
-                        }
+                        }*/
                         var testTile = (j + x) + ',' + (jj + y) + ',' + z;
                         //console.log('?'+j+','+jj+' '+testTile+','+y);
                         if (testTile in Game.map && Game.map[testTile].passThrough()) {
@@ -457,23 +482,24 @@ var TileManager = {
                             }
                             //if ()
                             if (Game.map[testTile].water < Game.map[tiles[i]].water) {
-                                flowRate = (Game.map[tiles[i]].water - Game.map[testTile].water)/4;
+                                flowRate = (Game.map[tiles[i]].water - Game.map[testTile].water)/8;
                                 //console.log("add some water");
                                 if (Game.map[testTile].liquidType != Game.map[tiles[i]].liquidType) {
-                                    if (Game.map[testTile] > Game.minWater) {
-                                        Game.map[tiles[i]].nextWater=0;
-                                        Game.map[testTile].nextWater=0;
-                                        Game.map[testTile].color='#666';
-                                        Game.map[tiles[i]].color='#666';
+                                    if (Game.map[testTile].water > Game.minWater) {
+                                        //Game.map[tiles[i]].solidify=true;
+                                        Game.map[testTile].solidify=true;
+                                        //Game.map[testTile].color='#666';
+                                        //Game.map[tiles[i]].color='#666';
                                         continue;
                                     }
                                     else {
-                                        Game.map[testTile].liquidType = Game.map[tiles[i]].liquidType;
+                                        Game.map[testTile].nextLiquidType = Game.map[tiles[i]].liquidType;
                                     }
                                 }
-                                
-                                Game.map[testTile].nextWater+=flowRate;
-                                Game.map[tiles[i]].nextWater-=flowRate;
+                                else {
+                                    Game.map[testTile].nextWater+=flowRate;
+                                    Game.map[tiles[i]].nextWater-=flowRate;
+                                }
                             }
                         }
                     }
@@ -482,6 +508,22 @@ var TileManager = {
         }
         for (let i=0;i<tiles.length;i++) {
             Game.map[tiles[i]].water=Game.map[tiles[i]].nextWater;
+            Game.map[tiles[i]].liquidType=Game.map[tiles[i]].nextLiquidType;
+            if (Game.map[tiles[i]].solidify) {
+                console.log('solidifying?');
+                Game.map[tiles[i]].solidify=false;
+                Game.map[tiles[i]].color='#666';
+                Game.map[tiles[i]].water=0;
+                Game.map[tiles[i]].nextWater=0;
+                if (Game.map[tiles[i]].entity==null && Game.map[tiles[i]].contains==null) {
+                    let key = tiles[i];
+                    let parts = key.split(',');
+                    let px = parseInt(parts[0]);
+                    let py = parseInt(parts[1]);
+                    let pz = parseInt(parts[2]);
+                    Game.scheduler.add(EntityMaker.makeByName('Obsidian',px,py,pz));
+                }
+            }
         }
     }
 };
@@ -497,6 +539,8 @@ function Tile(char,color,passable,seethrough,contains,direction,water=0,liquidTy
     this.water=water;
     this.nextWater=water;
     this.liquidType=liquidType; // 0 = water, 1 = lava?
+    this.nextLiquidType=liquidType;
+    this.solidify=false;
     this.setDirection=function(newDir) {
         //console.log("Setting to")
         this.direction=newDir;

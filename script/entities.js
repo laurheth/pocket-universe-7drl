@@ -99,6 +99,9 @@ var GrowMixin = function(obj,growChance) {
             }
         }
     };
+};
+
+var DestructMixin = function(obj) {
     obj.actOn = function () {
         Game.map[this.getKey()].entity=null;
         this.active=false;
@@ -172,6 +175,7 @@ var EntityMaker = {
             case 'Plant':
             newThing = new Entity(x,y,z,'P','#0f0','Plant',true);
             GrowMixin(newThing,0.2);
+            DestructMixin(newThing);
             break;
             case 'Fountain':
             newThing = new Entity(x,y,z,'^','#0ff','Fountain',true);
@@ -180,6 +184,10 @@ var EntityMaker = {
             case 'Volcano':
             newThing = new Entity(x,y,z,'^','#f00','Volcano',true);
             WaterMixin(newThing,40,1);
+            break;
+            case 'Obsidian':
+            newThing = new Entity(x,y,z,'#','#ccc','Obsidian',false);
+            DestructMixin(newThing);
             break;
         }
         return newThing;
