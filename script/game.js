@@ -18,6 +18,8 @@ var Game = {
     messages: null,
     currentTurn: 0,
     lastMessage: [""],
+    roomNames:[],
+    level: 1,
 
     init: function () {
         this.display = new ROT.Display({fontSize:19,fontFamily:'Overpass Mono, monospace'});
@@ -257,6 +259,7 @@ function Player (x, y, z) {
     this.x = x;
     this.y = y;
     this.z = z;
+    this.hurtByLiquidType=-1;
     this.alive=true;
     this.status={};//'Burning':10,'Drowning':10,'Freezing':10};
     //this.draw();
@@ -316,7 +319,10 @@ Player.prototype.act = function () {
     Game._drawVisible();
     Game.engine.lock();
     Game.playerName.innerHTML="Lauren";
-    Game.dungeonInfo.innerHTML="Dungeon Level 1"+"<br>"+"The Cold Expanse";
+    Game.dungeonInfo.innerHTML="Dungeon Level "+Game.level+"<br>";//+Game.roomNames[this.z];
+    if (this.z>=0 && this.z < Game.roomNames.length) {
+        Game.dungeonInfo.innerHTML+=Game.roomNames[this.z];
+    }
 
     // Check environment
     if (this.getKey() in Game.map && Game.map[this.getKey()].liquidType==1 && Game.map[this.getKey()].water > Game.minWater) {
@@ -690,7 +696,7 @@ function Tile(char,color,passable,seethrough,contains,direction,water=0,liquidTy
     }
     this.liquidThrough=function() {
         if (this.entity != null ) {
-            if ('hurtByLiquid' in this.entity) {
+            if ('hurtByLiquidType' in this.entity) {
                 return true;
             }
             else {

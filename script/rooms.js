@@ -7,6 +7,7 @@ var RoomGen = {
         let thisRoom = ROT.RNG.getItem(roomOpts);
         newWalls=this[thisRoom](k,roomSize);
         this.wallDirections(newWalls);
+        Game.roomNames.push("Room #"+k);
     },
 
     rectRoom:function(k,roomSize) {
