@@ -12,10 +12,18 @@ var Game = {
     walls: null,
     freeCells: null,
     minWater: 10,
+    playerInfo: null,
+    dungeonInfo: null,
+    messages: null,
+    currentTurn: 0,
+    lastMessage: [""],
 
     init: function () {
-        this.display = new ROT.Display();
-        document.body.appendChild(this.display.getContainer());
+        this.display = new ROT.Display({fontSize:19,fontFamily:'Overpass Mono, monospace'});
+        document.getElementById('gameContainer').appendChild(this.display.getContainer());
+        this.playerInfo = document.getElementById('playerInfo');
+        this.dungeonInfo = document.getElementById('dungeonInfo');
+        this.messages = document.getElementById('messages');
         this._generateMap();
 
         var lightPasses = function (x, y) {
@@ -221,6 +229,21 @@ var Game = {
         return true;
     },
 
+    sendMessage: function(message, local=false, key='0,0,0') {
+        if (this.lastMessage.indexOf(message)>=0) {
+            return;
+        }
+        if (local) {
+            if (!(key in this.map) || Math.abs(this.map[key].lastSeen - this.currentTurn)>2) {
+                return;
+            }
+        }
+        let newMessage = document.createElement("P");
+        newMessage.appendChild(document.createTextNode('> '+message));
+        this.messages.appendChild(newMessage);
+        this.lastMessage.push(message);
+    },
+
 };
 
 function Player (x, y, z) {
@@ -253,6 +276,10 @@ Player.prototype.getColor = function() {
 Player.prototype.act = function () {
     Game._drawVisible();
     Game.engine.lock();
+    Game.currentTurn++;
+    Game.playerInfo.innerHTML="Lauren";
+    Game.dungeonInfo.innerHTML="Dungeon Level 1"+"<br>"+"The Cold Expanse";
+    //Game.sendMessage("Something happened!");
     window.addEventListener("keydown", this);
 };
 
@@ -456,7 +483,10 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
                 }
             }
         }
-	    this.open=true;
+        else {
+            this.open=true;
+            Game.sendMessage("You open the portal.",false);
+        }
     };
 };
 
@@ -569,6 +599,7 @@ function Tile(char,color,passable,seethrough,contains,direction,water=0,liquidTy
     this.liquidType=liquidType; // 0 = water, 1 = lava?
     this.nextLiquidType=liquidType;
     this.solidify=false;
+    this.lastSeen=-10;
     this.setDirection=function(newDir) {
         //console.log("Setting to")
         this.direction=newDir;
@@ -577,6 +608,7 @@ function Tile(char,color,passable,seethrough,contains,direction,water=0,liquidTy
         return this.direction;
     }
     this.lightPasses=function() {
+        this.lastSeen=Game.currentTurn;
         if (this.entity!=null) {
             if ('lightPasses' in this.entity) {
                 return this.entity.lightPasses;

@@ -96,6 +96,7 @@ var GrowMixin = function(obj,growChance) {
                 let y=parseInt(parts[1]);
                 let z=parseInt(parts[2]);
                 Game.scheduler.add(EntityMaker.makeByName(this.name,x,y,z),true);
+                Game.sendMessage("The "+this.name+" grows!",true,this.getKey());
             }
         }
     };

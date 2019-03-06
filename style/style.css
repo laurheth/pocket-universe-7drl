@@ -1,0 +1,38 @@
+body {
+    font-family: 'Overpass Mono', monospace;
+    background:black;
+    color: white;
+    padding: 0;
+    margin: 0;
+}
+
+h1 {
+    margin: 8px;
+}
+
+#infoContainer {
+    padding: 8px;
+    display: flex;
+    justify-content: space-between;
+}
+
+#messages {
+    display: flex;
+    flex-direction: column-reverse;
+    overflow: hidden;
+    padding: 8px;
+}
+
+p {
+    padding: 0px;
+    margin: 1px 0;
+}
+
+#gameContainer {
+    display: inline-block;
+}
+
+#container {
+    height: 100vh;
+    overflow: hidden;
+}
