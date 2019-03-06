@@ -12,6 +12,7 @@ var Game = {
     walls: null,
     freeCells: null,
     minWater: 10,
+    deepThreshold: 40,
     playerName: null,
     statusList: null,
     dungeonInfo: null,
@@ -59,7 +60,7 @@ var Game = {
         this.scheduler = new ROT.Scheduler.Simple();
         this.scheduler.add(this.player, true);
         this.scheduler.add(this._addEntity('Plant'),true);
-        this.scheduler.add(this._addEntity('Volcano'),true);
+        this.scheduler.add(this._addEntity('Fountain'),true);
         this.scheduler.add(TileManager,true);
         this.engine = new ROT.Engine(this.scheduler);
         this.engine.start();
@@ -265,6 +266,10 @@ function Player (x, y, z) {
     //this.draw();
 };
 
+Player.prototype.seriousThreshold = {
+    'Drowning': [5,'Swimming'],
+};
+
 Player.prototype.printStatus = function() {
     // clear old statuses
     while (Game.statusList.firstChild) {
@@ -273,9 +278,9 @@ Player.prototype.printStatus = function() {
     // Print new ones
     var stats = Object.keys(this.status);
     for (let i=0;i<stats.length;i++) {
-        this.status[stats]--;
+        this.status[stats[i]]--;
         // Succumb to status effect
-        if (this.status[stats]<0) {
+        if (this.status[stats[i]]<0) {
             this.status={};
             this.status.Dead='10';
             this.alive=false;
@@ -286,7 +291,15 @@ Player.prototype.printStatus = function() {
     }
     for (let i=0;i<stats.length;i++) {
         var newStatus = document.createElement("LI");
-        newStatus.appendChild(document.createTextNode(stats[i]));
+        var message=stats[i];
+        if (stats[i] in this.seriousThreshold) {
+            if (this.status[stats[i]] > this.seriousThreshold[stats[i]][0]) {
+                message=this.seriousThreshold[stats[i]][1];
+            }
+        }
+        
+        newStatus.appendChild(document.createTextNode(message));
+        
         newStatus.className=stats[i];
         Game.statusList.appendChild(newStatus);
     }
@@ -324,7 +337,7 @@ Player.prototype.act = function () {
         Game.dungeonInfo.innerHTML+=Game.roomNames[this.z];
     }
 
-    // Check environment
+    // Lava logic
     if (this.getKey() in Game.map && Game.map[this.getKey()].liquidType==1 && Game.map[this.getKey()].water > Game.minWater) {
         //Game.sendMessage("The lava sets you aflame!",false,"",'Burning');
         Game.statusMessage("The lava has set you aflame!",'Burning');
@@ -334,6 +347,39 @@ Player.prototype.act = function () {
         else {
             this.status.Burning=5;
         }
+    }
+
+    // Water logic
+    if (this.getKey() in Game.map && Game.map[this.getKey()].liquidType==0 && Game.map[this.getKey()].water > Game.minWater) {
+        if ('Burning' in this.status) {
+            delete this.status.Burning;
+            Game.sendMessage("The water put out the flames.");
+        }
+        if (Game.map[this.getKey()].water > Game.deepThreshold || Game.map[this.getKey()].lake) {
+            if ('Drowning' in this.status) {
+                if (this.status.Drowning-1<=this.seriousThreshold.Drowning[0]) {
+                    Game.statusMessage("You are drowning!",'Drowning');
+                }
+            }
+            else {
+                Game.statusMessage("The water is above your head.",'Drowning');
+                this.status.Drowning=15;
+            }
+        }
+        else {
+            if ('Drowning' in this.status) {
+                if (this.status.Drowning>=this.seriousThreshold.Drowning[0]) {
+                    Game.sendMessage("You can breath again.");
+                }
+                else {
+                    Game.sendMessage("You gasp for breath!");
+                }
+                delete this.status.Drowning;
+            }
+        }
+    }
+    else {
+
     }
 
     this.printStatus();
@@ -560,6 +606,9 @@ var TileManager = {
         var tiles = Object.keys(Game.map);
         var flowRate=5;
         for (let i=0;i<tiles.length;i++) {
+            if (Game.map[tiles[i]].lake) {
+                continue;
+            }
             if (Game.map[tiles[i]].water>2*Game.minWater) {
                 //flowRate = Math.min((Game.map[tiles[i]].water - Game.minWater)/4,Game.minWater);
                 let parts=tiles[i].split(',');
@@ -598,7 +647,7 @@ var TileManager = {
                                 //console.log("add some water");
                                 if (Game.map[testTile].liquidType != Game.map[tiles[i]].liquidType) {
                                     if (Game.map[testTile].water > Game.minWater) {
-                                        Game.map[tiles[i]].solidify=true;
+                                        //Game.map[tiles[i]].solidify=true;
                                         Game.map[testTile].solidify=true;
                                         //Game.map[testTile].color='#666';
                                         //Game.map[tiles[i]].color='#666';
@@ -636,6 +685,7 @@ var TileManager = {
                 Game.map[tiles[i]].color='#666';
                 Game.map[tiles[i]].water=0;
                 Game.map[tiles[i]].nextWater=0;
+                Game.map[tiles[i]].lake=false;
                 /*if (Game.map[tiles[i]].entity==null && Game.map[tiles[i]].contains==null) {
                     let key = tiles[i];
                     let parts = key.split(',');
@@ -649,7 +699,7 @@ var TileManager = {
     }
 };
 
-function Tile(char,color,passable,seethrough,contains,direction,water=0,liquidType=0) {
+function Tile(char,color,passable,seethrough,contains,direction,water=0,liquidType=0,lake=false) {
     this.char=char;
     this.color=color;
     this.passable=passable;
@@ -663,6 +713,7 @@ function Tile(char,color,passable,seethrough,contains,direction,water=0,liquidTy
     this.nextLiquidType=liquidType;
     this.solidify=false;
     this.lastSeen=-10;
+    this.lake=lake;
     this.setDirection=function(newDir) {
         //console.log("Setting to")
         this.direction=newDir;
@@ -718,7 +769,7 @@ function Tile(char,color,passable,seethrough,contains,direction,water=0,liquidTy
                 return this.char;
             }
             else {
-                if (this.water < 4*Game.minWater) {
+                if (this.water < 4*Game.minWater && !this.lake) {
                     return '~';//String(Math.min(parseInt(this.water/Game.minWater),9));
                 }
                 else {
@@ -740,10 +791,20 @@ function Tile(char,color,passable,seethrough,contains,direction,water=0,liquidTy
             }
             else {
                 if (this.liquidType==0) {
-                    return '#00f';
+                    if (!this.lake) {
+                        return '#00f';
+                    }
+                    else {
+                        return '#00c';
+                    }
                 }
                 else if (this.liquidType==1) {
-                    return '#fa0';
+                    if (!this.lake) {
+                        return '#fa0';
+                    }
+                    else {
+                        return '#c70'
+                    }
                 }
             }
         }
