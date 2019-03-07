@@ -76,5 +76,9 @@ li {
     margin: 0;
     padding: 0;
     width: 60vw;
-    height:70vh;
+    height:65vh;
+}
+
+#holdPortal {
+    padding: 8px;
 }

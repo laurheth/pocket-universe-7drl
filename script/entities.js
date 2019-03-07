@@ -144,9 +144,17 @@ var ChaseMixin = function(obj,verb="attacks",dmg) {
             }
         }
     };
-    obj.actOn = function() {
+    obj.actOn = function(direction) {
         // shove!
-        var direction = [Math.sign(this.x - Game.player.x), Math.sign(this.y - Game.player.y)];
+        //var direction;
+        /*if (this.z==Game.player.z) {
+            direction = [Math.sign(this.x - Game.player.x), Math.sign(this.y - Game.player.y)];
+        }
+        else {
+            if (Game.map[this.getKey()].contains != null && Game.map[this.getKey()].contains instanceof Connection) {
+
+            }
+        }*/
         Game.sendMessage("You push the "+this.name.toLowerCase()+" away!");
         this.step(direction[0], direction[1]);
         this.step(direction[0], direction[1]);
@@ -211,7 +219,7 @@ var GrowMixin = function(obj,growChance) {
 
 var DestructMixin = function(obj,destroyMethod="destroy") {
     obj.destroyMethod=destroyMethod;
-    obj.actOn = function () {
+    obj.actOn = function (direction) {
         Game.map[this.getKey()].entity=null;
         this.active=false;
         Game.sendMessage("You "+this.destroyMethod+" the "+this.name.toLowerCase()+"!");
@@ -259,6 +267,25 @@ Entity.prototype.step = function(dx,dy,justCheck=false) {
         return newKey;
     }
 
+    if (Game.map[this.getKey()].contains != null && Game.map[this.getKey()].contains instanceof Connection) {
+        if (!(newKey in Game.map) || !Game.map[newKey].passThrough()) {
+            var parts;
+            if (this.getKey() == Game.map[this.getKey()].contains.getKey(0)) {
+                parts = Game.map[this.getKey()].contains.getKey(1).split(',');
+            }
+            else {
+                parts = Game.map[this.getKey()].contains.getKey(0).split(',');
+            }
+            if (Game.map[this.getKey()].entity==this) {
+                Game.map[this.getKey()].entity=null;
+            }
+            this.x=parseInt(parts[0]);
+            this.y=parseInt(parts[1]);
+            this.z=parseInt(parts[2]);
+            Game.map[this.getKey()].entity=this;
+        }
+    }
+
     if (((this.x+dx)+','+(this.y+dy)+','+this.z) in Game.map && Game.map[((this.x+dx)+','+(this.y+dy)+','+this.z)].passThrough()) {
         newKey=((this.x+dx)+','+(this.y+dy)+','+this.z);
     }
@@ -274,7 +301,7 @@ Entity.prototype.step = function(dx,dy,justCheck=false) {
         return null;
     }
 
-    if (Game.map[newKey].contains instanceof Connection) {
+    /*if (Game.map[newKey].contains instanceof Connection) {
         var whichSide;
         if (newKey == Game.map[newKey].contains.getKey(0)) {
             whichSide=1;
@@ -299,15 +326,17 @@ Entity.prototype.step = function(dx,dy,justCheck=false) {
             return null;
         }
     }
-    else {
+    else {*/
         if (!justCheck) {
-            Game.map[this.getKey()].entity=null;
+            if (Game.map[this.getKey()].entity==this) {
+                Game.map[this.getKey()].entity=null;
+            }
             Game.map[newKey].entity=this;
         
             this.x+=dx;
             this.y+=dy;
         }
-    }
+    //}
     return newKey;
 };
 

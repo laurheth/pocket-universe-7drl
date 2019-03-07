@@ -18,6 +18,7 @@ var Game = {
     statusList: null,
     dungeonInfo: null,
     messages: null,
+    holdPortal: null,
     currentTurn: 0,
     lastMessage: [""],
     roomNames:[],
@@ -37,6 +38,8 @@ var Game = {
         this.statusList = document.getElementById('statusList');
         this.dungeonInfo = document.getElementById('dungeonInfo');
         this.messages = document.getElementById('messages');
+        this.holdPortal = document.getElementById('holdPortal');
+        this.holdPortal.innerHTML = 'Holding portal to: dungeon of despair';
         this._generateMap();
 
         var lightPasses = function (x, y, def=false) {
@@ -67,7 +70,8 @@ var Game = {
 
         this.scheduler = new ROT.Scheduler.Simple();
         this.scheduler.add(this.player, true);
-        //this.scheduler.add(this._addEntity('Goblin'),true);
+        this.scheduler.add(this._addEntity('Goblin'),true);
+        this.scheduler.add(this._addEntity('Goblin'),true);
         //this.scheduler.add(this._addEntity('Volcano'),true);
         //this.scheduler.add(this._addEntity('Fountain'),true);
         this.scheduler.add(TileManager,true);
@@ -571,7 +575,7 @@ Player.prototype.handleEvent = function (e) {
         if (!(newKey in Game.map) || !(Game.map[newKey].passThrough())) {
             if (newKey in Game.map) {
                 if (Game.map[newKey].contains != null && 'actOn' in Game.map[newKey].contains) {
-                    Game.map[newKey].contains.actOn();
+                    Game.map[newKey].contains.actOn(diff);
                     Game._drawVisible();
                     window.removeEventListener("keydown", this);
                     Game.engine.unlock();
@@ -579,7 +583,7 @@ Player.prototype.handleEvent = function (e) {
                 }
                 else if (Game.map[newKey].entity != null) {
                     if ('actOn' in Game.map[newKey].entity && 'actOn' in Game.map[newKey].entity) {
-                        Game.map[newKey].entity.actOn();
+                        Game.map[newKey].entity.actOn(diff);
                         Game._drawVisible();
                         window.removeEventListener("keydown", this);
                         Game.engine.unlock();
@@ -600,6 +604,7 @@ Player.prototype.handleEvent = function (e) {
                 this.x = parseInt(parts[0]);
                 this.y = parseInt(parts[1]);
                 this.z = parseInt(parts[2]);
+                Game.map[this.x + ',' + this.y + ',' + this.z].entity=this;
                 continue;
             }
             return;
@@ -716,22 +721,40 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
         return [this.p2[0] - this.p1[0], this.p2[1] - this.p1[1]];
     };
 
+    this.hasEntity =function() {
+        if (this.getKey(0) in Game.map && Game.map[this.getKey(0)].entity) {
+            return Game.map[this.getKey(0)].entity;
+        }
+        else if (this.getKey(1) in Game.map && Game.map[this.getKey(1)].entity) {
+            return Game.map[this.getKey(1)].entity;
+        }
+        else {
+            return null;
+        }
+    };
+
     this.getChar=function() {
-	if (this.open) {
+        if (this.hasEntity() != null) {
+            return this.hasEntity().getChar();
+        }
+    	if (this.open) {
             return '*';
-	}
-	else {
-	    return "+";
-	}
+	    }
+	    else {
+	        return "+";
+	    }
     };
 
     this.getColor=function() {
-	if (this.open) {
+        if (this.hasEntity() != null) {
+            return this.hasEntity().getColor();
+        }
+	    if (this.open) {
             return '#00f';
-	}
-	else {
-	    return '#0ff';
-	}
+	    }
+	    else {
+	        return '#0ff';
+	    }
     };
 
     this.getKey=function(which) {
@@ -750,18 +773,19 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
     this.passThrough=function() {
         var toReturn=this.open;
         for (let q=0;q<2;q++) {
-            if (Game.map[this.getKey(q)].entity != null && 'passThrough' in Game.map[this.getKey(q)].entity) {
+            toReturn &= Game.map[this.getKey(q)].entity == null;
+            /*if (Game.map[this.getKey(q)].entity != null && 'passThrough' in Game.map[this.getKey(q)].entity) {
                 toReturn &= Game.map[this.getKey(q)].entity.passThrough();
-            }
+            }*/
         }
         return toReturn;
     };
 
-    this.actOn=function() {
+    this.actOn=function(direction) {
         if (this.open) {
             for (let q=0;q<2;q++) {
                 if (Game.map[this.getKey(q)].entity != null && 'actOn' in Game.map[this.getKey(q)].entity) {
-                    Game.map[this.getKey(q)].entity.actOn();
+                    Game.map[this.getKey(q)].entity.actOn(direction);
                 }
             }
         }
