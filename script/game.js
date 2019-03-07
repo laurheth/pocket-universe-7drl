@@ -347,19 +347,11 @@ Player.prototype.printStatus = function() {
     }
     // held portal
     if (this.heldPortal != null) {
-        var portalMsg="Holding portal to: ";
-        var zends=[-1,-1];
-        for (let q=0;q<2;q++) {
-            let parts = this.heldPortal.getKey(q).split(',');
-            zends[q]=parseInt(parts[2]);
-        }
-        if (zends[0]==this.z) {
-            portalMsg+=this.heldPortal.name(1);
-        }
-        else {
-            portalMsg+=this.heldPortal.name(0);
-        }
+        var portalMsg="Holding portal to: " + this.heldPortal.name(-1);
         Game.holdPortal.innerHTML = portalMsg;
+    }
+    else {
+        Game.holdPortal.innerHTML="";
     }
 };
 /*Player.prototype.draw = function () {
@@ -397,12 +389,15 @@ Player.prototype.dropPortal = function() {
         Game.sendMessage("No portal to drop. Pick one up first.");
         return false;
     }
-    
+    this.heldPortal.drop(this.x,this.y,this.z);
+    this.heldPortal=null;
+    Game.sendMessage("You drop the portal. It attaches itself to the wall and opens!");
+    return true;
 };
 
 Player.prototype.getPortal = function() {
     var standPortal = Game.map[this.getKey()].contains; // don't grab a portal you're standing on
-    if (stendPortal != null) {
+    if (standPortal != null) {
         Game.sendMessage("Can't get a portal while standing in it.");
         return false;
     }
@@ -424,10 +419,17 @@ Player.prototype.getPortal = function() {
             break;
         }
     }
-    this.dropPortal();
-    if (this.heldPortal != null) {
-        this.heldPortal=portalToGet;
+    if (!success) {
+        Game.sendMessage("No portal within reach.");
+        return success;
     }
+
+    if (this.heldPortal != null) {
+        this.dropPortal();
+    }
+    
+    this.heldPortal=portalToGet;
+    
     Game.sendMessage("Picked up the portal to "+this.heldPortal.name()+".");
     return success;
 };
@@ -605,6 +607,15 @@ Player.prototype.handleEvent = function (e) {
             case 79:
                 success=this.openPortal(true);
             break;
+
+            // Get portal
+            case 71:
+                success=this.getPortal();
+            break;
+            // Drop portal
+            case 68:
+                success=this.dropPortal();
+            break;
         }
         if (success) {
             window.removeEventListener("keydown", this);
@@ -701,7 +712,7 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
     this.p2=[x2,y2,z2];
     this.open=false;
     // corrects entrance to mesh with entrace 1
-    this.correctEntrance = function(which) {
+    this.correctEntrance = function(which,acceptAny=false) {
         var desiredDirection;
         //console.log("Correcting?");
         var pother;
@@ -729,7 +740,9 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
                 Game.map[this.getKey(0)].contains=null;
             }
         }
-        var acceptAny=false;
+        if (acceptAny) {
+            desiredDirection=-1;
+        }
         if (desiredDirection==-1) {
             acceptAny=true;
         }
@@ -739,9 +752,12 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
         let breaker=0;
         var success=false;
         var newKey;
-        while (breaker<100 && !success) {
+        while (breaker<200 && !success) {
             for (let i=-breaker;i<breaker;i++) {
                 for (let j=-breaker;j<breaker;j++) {
+                    if (Math.abs(i)+Math.abs(j) != breaker) { // expanding diamond pattern
+                        continue;
+                    }
                     newKey=(pother[0]+i)+','+(pother[1]+j)+','+pother[2];
                     if (newKey in Game.map && (Game.noOtherPortals(pother[0]+i,pother[1]+j,pother[2])) &&(Game.map[newKey].getDirection() == desiredDirection || (acceptAny && Game.map[newKey].getDirection() >= 0))) {
                         pother[0]+=i;
@@ -774,19 +790,33 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
         }
     };
 
+    this.drop = function(x,y,z) {
+        var which;
+        if (this.p1[2]<0) {
+            which=0;
+            this.p1=[x,y,z];
+        }
+        else {
+            which=1;
+            this.p2=[x,y,z];
+        }
+        this.correctEntrance(!which,true);
+        this.correctEntrance(which);
+    };
+
     this.grabFrom = function(grabKey) {
         if (grabKey==this.getKey(0)) {
-            p1[2]=-1;
+            this.p1[2]=-1;
         }
         else if (grabKey==this.getKey(1)) {
-            p2[2]=-1;
+            this.p2[2]=-1;
         }
-    }
+    };
 
     this.name = function(which=-1) {
         var checkZ;
         if (which<0) {
-            if (p1[2]<0) {
+            if (this.p1[2]<0) {
                 checkZ=1;
             }
             else {
@@ -794,10 +824,10 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
             }
         }
         if (!which) {
-            checkZ = p1[2];
+            checkZ = this.p1[2];
         }
         else {
-            checkZ = p2[2];
+            checkZ = this.p2[2];
         }
         if (checkZ >=0 && checkZ < Game.roomNames.length) {
             return Game.roomNames[checkZ];
@@ -826,7 +856,7 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
             return this.hasEntity().getChar();
         }
 
-        if (p1[2]<0 || p2[2] <0) {
+        if (this.p1[2]<0 || this.p2[2] <0) {
             return 'x';
         }
 
@@ -842,7 +872,7 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
         if (this.hasEntity() != null) {
             return this.hasEntity().getColor();
         }
-        if (p1[2]<0 || p2[2] <0) {
+        if (this.p1[2]<0 || this.p2[2] <0) {
             return '#0dd';
         }
 	    if (this.open) {
@@ -869,13 +899,13 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
     this.passThrough=function() {
         var toReturn=this.open;
         for (let q=0;q<2;q++) {
-            toReturn &= Game.map[this.getKey(q)].entity == null;
+            toReturn &= (this.getKey(q) in Game.map && Game.map[this.getKey(q)].entity == null);
             /*if (Game.map[this.getKey(q)].entity != null && 'passThrough' in Game.map[this.getKey(q)].entity) {
                 toReturn &= Game.map[this.getKey(q)].entity.passThrough();
             }*/
         }
-        toReturn &= p1[2]>=0;
-        toReturn &= p2[2]>=0;
+        toReturn &= this.p1[2]>=0;
+        toReturn &= this.p2[2]>=0;
         return toReturn;
     };
 
