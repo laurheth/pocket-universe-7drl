@@ -39,7 +39,7 @@ var Game = {
         this.dungeonInfo = document.getElementById('dungeonInfo');
         this.messages = document.getElementById('messages');
         this.holdPortal = document.getElementById('holdPortal');
-        this.holdPortal.innerHTML = 'Holding portal to: dungeon of despair';
+        //this.holdPortal.innerHTML = 'Holding portal to: dungeon of despair';
         this._generateMap();
 
         var lightPasses = function (x, y, def=false) {
@@ -291,6 +291,7 @@ function Player (x, y, z) {
     this.alive=true;
     this.burns=true;
     this.status={};//'Burning':10,'Drowning':10,'Freezing':10};
+    this.heldPortal=null;
     //this.draw();
 };
 
@@ -344,6 +345,22 @@ Player.prototype.printStatus = function() {
         newStatus.className=stats[i];
         Game.statusList.appendChild(newStatus);
     }
+    // held portal
+    if (this.heldPortal != null) {
+        var portalMsg="Holding portal to: ";
+        var zends=[-1,-1];
+        for (let q=0;q<2;q++) {
+            let parts = this.heldPortal.getKey(q).split(',');
+            zends[q]=parseInt(parts[2]);
+        }
+        if (zends[0]==this.z) {
+            portalMsg+=this.heldPortal.name(1);
+        }
+        else {
+            portalMsg+=this.heldPortal.name(0);
+        }
+        Game.holdPortal.innerHTML = portalMsg;
+    }
 };
 /*Player.prototype.draw = function () {
     Game.display.draw(Game.offset[0], Game.offset[1], "@", "#fff");
@@ -373,6 +390,46 @@ Player.prototype.getColor = function() {
 
 Player.prototype.getKey = function() {
     return this.x+','+this.y+','+this.z;
+};
+
+Player.prototype.dropPortal = function() {
+    if (this.heldPortal == null) {
+        Game.sendMessage("No portal to drop. Pick one up first.");
+        return false;
+    }
+    
+};
+
+Player.prototype.getPortal = function() {
+    var standPortal = Game.map[this.getKey()].contains; // don't grab a portal you're standing on
+    if (stendPortal != null) {
+        Game.sendMessage("Can't get a portal while standing in it.");
+        return false;
+    }
+    var success=false;
+    var portalToGet=null;
+    for (let i=-1;i<2;i++) {
+        for (let j=-1;j<2;j++) {
+            let testKey = (this.x+i)+','+(this.y+j)+','+this.z;
+            if (testKey in Game.map && Game.map[testKey].contains != null && Game.map[testKey].contains instanceof Connection && Game.map[testKey].contains != standPortal) {
+                //Game.map[testKey].contains.open = openClose;
+                portalToGet=Game.map[testKey].contains;
+                portalToGet.grabFrom(testKey);
+                Game.map[testKey].contains=null;
+                success=true;
+                break;
+            }
+        }
+        if (success) {
+            break;
+        }
+    }
+    this.dropPortal();
+    if (this.heldPortal != null) {
+        this.heldPortal=portalToGet;
+    }
+    Game.sendMessage("Picked up the portal to "+this.heldPortal.name()+".");
+    return success;
 };
 
 Player.prototype.openPortal = function(openClose) {
@@ -717,6 +774,37 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
         }
     };
 
+    this.grabFrom = function(grabKey) {
+        if (grabKey==this.getKey(0)) {
+            p1[2]=-1;
+        }
+        else if (grabKey==this.getKey(1)) {
+            p2[2]=-1;
+        }
+    }
+
+    this.name = function(which=-1) {
+        var checkZ;
+        if (which<0) {
+            if (p1[2]<0) {
+                checkZ=1;
+            }
+            else {
+                checkZ = 0;
+            }
+        }
+        if (!which) {
+            checkZ = p1[2];
+        }
+        else {
+            checkZ = p2[2];
+        }
+        if (checkZ >=0 && checkZ < Game.roomNames.length) {
+            return Game.roomNames[checkZ];
+        }
+        return 'An unknown location';
+    };
+
     this.getDelta = function() {
         return [this.p2[0] - this.p1[0], this.p2[1] - this.p1[1]];
     };
@@ -737,6 +825,11 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
         if (this.hasEntity() != null) {
             return this.hasEntity().getChar();
         }
+
+        if (p1[2]<0 || p2[2] <0) {
+            return 'x';
+        }
+
     	if (this.open) {
             return '*';
 	    }
@@ -748,6 +841,9 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
     this.getColor=function() {
         if (this.hasEntity() != null) {
             return this.hasEntity().getColor();
+        }
+        if (p1[2]<0 || p2[2] <0) {
+            return '#0dd';
         }
 	    if (this.open) {
             return '#00f';
@@ -778,6 +874,8 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
                 toReturn &= Game.map[this.getKey(q)].entity.passThrough();
             }*/
         }
+        toReturn &= p1[2]>=0;
+        toReturn &= p2[2]>=0;
         return toReturn;
     };
 
