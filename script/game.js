@@ -23,8 +23,15 @@ var Game = {
     level: 1,
 
     init: function () {
+        let screen = document.getElementById('screen');
         this.display = new ROT.Display({fontSize:19,fontFamily:'Overpass Mono, monospace'});
-        document.getElementById('gameContainer').appendChild(this.display.getContainer());
+        var setsize=this.display.computeSize(screen.clientWidth,screen.clientHeight);
+        console.log(screen.clientWidth+','+screen.clientHeight);
+        this.display.setOptions({width: setsize[0],height: setsize[1]});
+        this.offset[0] = parseInt(setsize[0]/2);
+        this.offset[1] = parseInt(setsize[1]/2);
+        //console.log(fontsize);
+        screen.appendChild(this.display.getContainer());
         this.playerName = document.getElementById('playerName');
         this.statusList = document.getElementById('statusList');
         this.dungeonInfo = document.getElementById('dungeonInfo');
