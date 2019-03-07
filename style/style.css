@@ -63,6 +63,10 @@ li {
     color: cyan;
 }
 
+.Overheating {
+    color: red;
+}
+
 .Bleeding {
     color: red;
 }

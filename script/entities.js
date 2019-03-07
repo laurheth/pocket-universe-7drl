@@ -13,11 +13,14 @@ function Entity (x,y,z,char,color,name, lightPasses=true) {
     this.lightPasses=lightPasses;
     this.isPlant=false;
     this.burns=true;
+    this.immuneToFire=false;
     this.violent=false;
     this.dmg=0;
     this.stunned=false;
     this.slow=false;
     this.sturdy=false;
+    this.tempHate=[];
+    this.hateCounter=0;
     Game.map[x+','+y+','+z].entity=this;
 };
 
@@ -61,15 +64,20 @@ Entity.prototype.spreadFire = function(key) {
                             }
                         }
                     }
-                    if (Game.map[testKey].entity != null && Game.map[testKey].entity.burns && (Game.map[testKey].liquidType != 0 || Game.map[testKey].water<Game.minWater)) {
-                        if (Game.map[testKey].entity != Game.player && Game.map[testKey].entity.onFire<0) {
-                            Game.map[testKey].entity.soonToBeOnFire = true;
-                            Game.sendMessage("The fire is spreading!", true, testKey);
+                    if (Game.map[testKey].entity != null && (Game.map[testKey].entity.burns || 'melt' in Game.map[testKey].entity) && (Game.map[testKey].liquidType != 0 || Game.map[testKey].water<Game.minWater)) {
+                        if ('melt' in Game.map[testKey].entity) {
+                            Game.map[testKey].entity.melt();
                         }
-                        else if (Game.map[testKey].entity == Game.player) {
-                            if (!('Burning' in Game.player.status)) {
-                                Game.statusMessage("You have caught on fire!", 'Burning');
-                                Game.player.status.Burning = 10;
+                        else {
+                            if (Game.map[testKey].entity != Game.player && Game.map[testKey].entity.onFire < 0) {
+                                Game.map[testKey].entity.soonToBeOnFire = true;
+                                Game.sendMessage("The fire is spreading!", true, testKey);
+                            }
+                            else if (Game.map[testKey].entity == Game.player) {
+                                if (!('Burning' in Game.player.status)) {
+                                    Game.statusMessage("You have caught on fire!", 'Burning');
+                                    Game.player.status.Burning = 10;
+                                }
                             }
                         }
                     }
@@ -84,6 +92,37 @@ Entity.prototype.spreadFire = function(key) {
 
 Entity.prototype.common = function() {
     if (!this.active) {return;}
+    if (this.z in Game.roomTags && this.tempHate.length>0) {
+        for (let i=0;i<this.tempHate.length;i++) {
+            if (Game.roomTags[this.z].indexOf(this.tempHate[i])>=0) {
+                this.hateCounter+=2;
+            }
+        }
+    }
+    if (this.hateCounter>0) {this.hateCounter--;}
+
+    if (this.hateCounter > 10) {
+        if (ROT.RNG.getUniform()>0.8) {
+            Game.map[this.getKey()].entity = null;
+            this.active = false;
+            var message = "The " + this.name.toLowerCase();
+            if (this.isPlant) {
+                Game.sendMessage(message + " withered away.", true, this.getKey());
+            }
+            else {
+                if (this.tempHate[0] == 'hot') {
+                    message += " died from the heat!";
+                }
+                else if (this.tempHate[0] == 'cold') {
+                    message += " froze to death!";
+                }
+                Game.sendMessage(message, true, this.getKey());
+
+            }
+            return;
+        }
+    }
+
     if (Game.map[this.getKey()].burns && Game.map[this.getKey()].liquidType==1 && Game.map[this.getKey()].water>Game.minWater) {
         this.soonToBeOnFire=true;
     }
@@ -109,10 +148,21 @@ Entity.prototype.common = function() {
         else {
             this.spreadFire(this.getKey());
         }
-        this.onFire++;
+        if (!this.immuneToFire) {
+            this.onFire++;
+        }
     }
     if (this.soonToBeOnFire && this.onFire<0) {
         this.onFire=Math.floor(ROT.RNG.getUniform()*5);
+    }
+}
+
+var OozeMixin = function(obj,oozeColor) {
+    obj.oozeColor = oozeColor;
+    obj.ooze = function() {
+        if (this.getKey() in Game.map) {
+            Game.map[this.getKey()].color=oozeColor;
+        }
     }
 }
 
@@ -137,7 +187,7 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
             this.targetDir = [Math.sign(-this.x + Game.player.x), Math.sign(-this.y + Game.player.y)];
             //this.targetPos=[Game.player.x,Game.player.y];
         }
-        if (this.onFire>=0) {
+        if (this.onFire>=0 && !this.immuneToFire) {
             this.targetDir=null;
         }
         while (!success && breaker < 5) {
@@ -249,6 +299,7 @@ var HurtByLiquidMixin = function(obj,liquidType) {
         if (liquid == this.hurtByLiquidType) {
             if ('melt' in this) {
                 this.melt();
+                return;
             }
             if (this.hurtByLiquidType==1 && this.burns) {
                 if (this.onFire<0) {
@@ -270,12 +321,19 @@ var MeltMixin = function (obj, liquidType) {
     obj.melt = function () {
         Game.map[this.getKey()].water=2*Game.minWater;
         Game.map[this.getKey()].nextWater = Game.map[this.getKey()].water;
+        Game.map[this.getKey()].entity=null;
+        this.active=false;
+        Game.sendMessage("The "+this.name.toLowerCase()+" melted.",true,this.getKey());
     }
 }
 
 Entity.prototype.step = function(dx,dy,justCheck=false) {
     //console.log(dx+','+dy);
     var newKey=((this.x+dx)+','+(this.y+dy)+','+this.z);
+
+    if ('ooze' in this) {
+        this.ooze();
+    }
 
     if (this.violent && newKey in Game.map && Game.map[newKey].entity != null && Game.map[newKey].entity == Game.player) {
         //Game.sendMessage("The "+this.name.toLowerCase()+" attacks you!");
@@ -366,17 +424,59 @@ var EntityMaker = {
             newThing = new Entity(x,y,z,'g','#0f0','Goblin',true);
             ChaseMixin(newThing,'attacks',2);
             HurtByLiquidMixin(newThing,1);
+            newThing.tempHate.push('cold');
+            break;
+            case 'Gargoyle':
+            newThing = new Entity(x,y,z,'G','#ccc','Goblin',true);
+            ChaseMixin(newThing,'attacks',3,false,true);
+            newThing.burns=false;
+            break;
+            case 'Snake':
+            newThing = new Entity(x,y,z,'S','#0f0','Goblin',true);
+            ChaseMixin(newThing,'bites',2);
+            HurtByLiquidMixin(newThing,1);
+            newThing.tempHate.push('cold');
+            break;
+            case 'Penguin':
+            newThing = new Entity(x,y,z,'p','#fff','Penguin',true);
+            ChaseMixin(newThing,'attacks',2);
+            HurtByLiquidMixin(newThing,1);
+            newThing.tempHate.push('hot');
+            break;
+            case 'Moose':
+            newThing = new Entity(x,y,z,'M','#0af','Moose',true);
+            ChaseMixin(newThing,'tramples',3,false,true);
+            HurtByLiquidMixin(newThing,1);
+            newThing.tempHate.push('hot');
+            break;
+            case 'PolarBear':
+            newThing = new Entity(x,y,z,'B','#0af','Polar Bear',true);
+            ChaseMixin(newThing,'thrashes',4,false,true);
+            HurtByLiquidMixin(newThing,1);
+            newThing.tempHate.push('hot');
+            break;
+            case 'FlameDemon':
+            newThing = new Entity(x,y,z,'F','#fa0','Flame Demon',true);
+            ChaseMixin(newThing,'attacks',1);
+            HurtByLiquidMixin(newThing,0);
+            newThing.immuneToFire=true;
+            newThing.onFire=1;
+            //newThing.tempHate.push('cold');
             break;
             case 'Snail':
             newThing = new Entity(x,y,z,'a','#990','Giant snail',true);
-            ChaseMixin(newThing,'attacks',4,true,true);
+            ChaseMixin(newThing,'crushes',3,true,true);
+            OozeMixin(newThing,'#fff');
             HurtByLiquidMixin(newThing,1);
+            newThing.tempHate.push('cold');
             break;
             case 'Plant':
             newThing = new Entity(x,y,z,'P','#0f0','Plant',true);
             GrowMixin(newThing,0.2);
             DestructMixin(newThing,"cut down");
             HurtByLiquidMixin(newThing,1);
+            newThing.tempHate.push('cold');
+            newThing.tempHate.push('hot');
             break;
             case 'Fountain':
             newThing = new Entity(x,y,z,'^','#0ff','Fountain',true);

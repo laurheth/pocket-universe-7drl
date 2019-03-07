@@ -23,6 +23,7 @@ var Game = {
     lastMessage: [""],
     roomNames:[],
     roomTags:{},
+    portalList:[],
     level: 1,
 
     init: function () {
@@ -71,8 +72,8 @@ var Game = {
 
         this.scheduler = new ROT.Scheduler.Simple();
         this.scheduler.add(this.player, true);
-        this.scheduler.add(this._addEntity('Snail'),true);
-        this.scheduler.add(this._addEntity('Snail'),true);
+        this.scheduler.add(this._addEntity('Plant'),true);
+        //this.scheduler.add(this._addEntity('Snail'),true);
         //this.scheduler.add(this._addEntity('Volcano'),true);
         //this.scheduler.add(this._addEntity('Fountain'),true);
         this.scheduler.add(TileManager,true);
@@ -115,8 +116,13 @@ var Game = {
                 newPortal = new Connection(pC[0],pC[1],pC[2],pC[3],pC[4],pC[5]);
                 //this.map[newPortal.getKey(1)].contains=newPortal;
                 //this.map[newPortal.getKey(0)].contains=newPortal;
-                newPortal.correctEntrance(1);
-                newPortal.correctEntrance(0);
+                if (!(newPortal.correctEntrance(1))) {
+                    newPortal.correctEntrance(1,true);
+                }
+                if (!(newPortal.correctEntrance(0))) {
+                    newPortal.correctEntrance(0,true);
+                    newPortal.correctEntrance(1);
+                }
             }
             k++;
         }
@@ -139,8 +145,13 @@ var Game = {
                 newPortal = new Connection(pC[0], pC[1], pC[2], pC[3], pC[4], pC[5]);
                 this.map[newPortal.getKey(1)].contains = newPortal;
                 this.map[newPortal.getKey(0)].contains = newPortal;
-                newPortal.correctEntrance(1);
-                newPortal.correctEntrance(0);
+                if (!(newPortal.correctEntrance(1))) {
+                    newPortal.correctEntrance(1,true);
+                }
+                if (!(newPortal.correctEntrance(0))) {
+                    newPortal.correctEntrance(0,true);
+                    newPortal.correctEntrance(1);
+                }
             }
         }
 
@@ -299,6 +310,7 @@ function Player (x, y, z) {
 Player.prototype.seriousThreshold = {
     'Drowning': [5,'Swimming'],
     'Hypothermia': [20,'Cold'],
+    'Overheating': [20,'Hot'],
 };
 
 Player.prototype.wound = function(dmg) {
@@ -492,14 +504,14 @@ Player.prototype.act = function () {
 
     // Cold logic
     if (this.z in Game.roomTags && Game.roomTags[this.z].indexOf('cold')>=0 && !('Burning' in this.status)) {
+        if ('Overheating' in this.status) {
+            this.status.Overheating += 6;
+        }
         if (!('Hypothermia' in this.status)) {
             Game.statusMessage("It is very cold here.",'Hypothermia');
             this.status.Hypothermia = 100;
         }
         else {
-            if ('Overheating' in this.status) {
-                this.status.Overheating += 6;
-            }
             if (this.status.Hypothermia==70) {
                 Game.statusMessage("You are starting to shiver.",'Hypothermia');
             }
@@ -526,6 +538,42 @@ Player.prototype.act = function () {
             else {
                 Game.sendMessage("You feel warm again.");
                 delete this.status.Hypothermia;
+            }
+        }
+    }
+
+    // Heat logic
+    if (this.z in Game.roomTags && Game.roomTags[this.z].indexOf('hot')>=0) {
+        if ('Hypothermia' in this.status) {
+            this.status.Hypothermia += 6;
+        }
+        if (!('Overheating' in this.status)) {
+            Game.statusMessage("It is very hot here.",'Overheating');
+            this.status.Overheating = 100;
+        }
+        else {
+            if (this.status.Overheating==70) {
+                Game.statusMessage("You are sweating heavily.",'Overheating');
+            }
+            else if (this.status.Overheating==20) {
+                Game.statusMessage("You feel nauseous and light headed from the heat!",'Overheating');
+            }
+            else if (this.status.Overheating==5) {
+                Game.statusMessage("You are about to pass out and die of heat stroke!",'Overheating');
+            }
+            else if (this.status.Overheating<5) {
+                Game.statusMessage("You are are dying of heat stroke!!",'Overheating');
+            }
+        }
+    }
+    else {
+        if ('Overheating' in this.status) {
+            if (this.status.Overheating < 70) {
+                this.status.Overheating += 6;
+            }
+            else {
+                Game.sendMessage("You feel cool again.");
+                delete this.status.Overheating;
             }
         }
     }
@@ -766,9 +814,9 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
             else {
                 desiredDirection=-1;
             }
-            if (this.getKey(1) in Game.map && Game.map[this.getKey(1)].contains == this) {
+            /*if (this.getKey(1) in Game.map && Game.map[this.getKey(1)].contains == this) {
                 Game.map[this.getKey(1)].contains=null;
-            }
+            }*/
         }
         else {
             pother=this.p1;
@@ -778,9 +826,9 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
             else {
                 desiredDirection=-1;
             }
-            if (this.getKey(0) in Game.map && Game.map[this.getKey(0)].contains == this) {
+            /*if (this.getKey(0) in Game.map && Game.map[this.getKey(0)].contains == this) {
                 Game.map[this.getKey(0)].contains=null;
-            }
+            }*/
         }
         if (acceptAny) {
             desiredDirection=-1;
@@ -802,6 +850,11 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
                     }
                     newKey=(pother[0]+i)+','+(pother[1]+j)+','+pother[2];
                     if (newKey in Game.map && (Game.noOtherPortals(pother[0]+i,pother[1]+j,pother[2])) &&(Game.map[newKey].getDirection() == desiredDirection || (acceptAny && Game.map[newKey].getDirection() >= 0))) {
+
+                        if ((pother[0]+','+pother[1]+','+pother[2]) in Game.map && Game.map[(pother[0]+','+pother[1]+','+pother[2])].contains == this) {
+                            Game.map[(pother[0]+','+pother[1]+','+pother[2])].contains=null;
+                        }
+
                         pother[0]+=i;
                         pother[1]+=j;
                         success=true;
@@ -844,9 +897,12 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
             this.p2=[x,y,z];
         }
         if (!this.correctEntrance(!which,true)) {
+            this.correctEntrance(which,true);
             this.correctEntrance(!which);
         }
-        this.correctEntrance(which);
+        else {
+            this.correctEntrance(which);
+        }
     };
 
     this.grabFrom = function(grabKey) {
