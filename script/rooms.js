@@ -1,6 +1,6 @@
 var RoomGen = {
     //colors:['#f00','#ff0','#0f0','#0ff','#00f','#f0f'],
-
+    roomOpts:['rectRoom','roundRoom','tRoom','caveRoom','hallRoom'],
     biomeOpts:function(biome) {
         var opts={};
         switch (biome) {
@@ -8,30 +8,36 @@ var RoomGen = {
             case 'Dungeon':
                 opts.wallColor='#ddd';
                 opts.floorColor='#999';
+                opts.roomOpts=['rectRoom','tRoom','hallRoom','roundRoom'];
                 //opts.floorChars=['.'];
                 break;
             case 'Cold':
                 opts.wallColor='#eef';
                 opts.floorColor='#eef';
+                opts.roomOpts=this.roomOpts;
                 //opts.floorChars=['.'];
                 break;
             case 'Cave':
                 opts.wallColor='#c63';
                 opts.floorColor='#b52';
+                opts.roomOpts=['caveRoom','roundRoom'];
                 //opts.floorChars=['.',];
                 break;
             case 'Hot':
                 opts.wallColor='#f31';
                 opts.floorColor='#e20';
+                opts.roomOpts=this.roomOpts;
                 //opts.floorChars=['.'];
                 break;
             case 'Jungle':
                 opts.wallColor='#0f0';
                 opts.floorColor='#0e0';
+                opts.roomOpts=['caveRoom','roundRoom'];
                 break;
             case 'Swamp':
                 opts.wallColor='#0c3';
                 opts.floorColor='#0b2';
+                opts.roomOpts=['caveRoom','roundRoom'];
                 break;
                 //opts.floorChars=['.',','];
         }
@@ -44,8 +50,8 @@ var RoomGen = {
         var biomeList=['Dungeon','Cold','Cave','Hot','Jungle','Swamp'];
         var opts=this.biomeOpts(ROT.RNG.getItem(biomeList));
         //console.log(opts);
-        var roomOpts = ['rectRoom','roundRoom','tRoom','caveRoom','hallRoom'];
-        let thisRoom = ROT.RNG.getItem(roomOpts);
+        //var roomOpts = ['rectRoom','roundRoom','tRoom','caveRoom','hallRoom'];
+        let thisRoom = ROT.RNG.getItem(opts.roomOpts);
         newWalls=this[thisRoom](k,roomSize,opts);
         console.log(thisRoom+' '+roomSize+' '+k);
         this.wallDirections(newWalls);
