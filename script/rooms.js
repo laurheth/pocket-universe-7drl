@@ -10,6 +10,13 @@ var RoomGen = {
                 opts.wallColor='#ddd';
                 opts.floorColor='#999';
                 opts.roomOpts=['rectRoom','tRoom','hallRoom','roundRoom'];
+                opts.features={
+                    lake:0.1,
+                    river: 0,
+                    entitycluster: 0,
+                    forcluster:[],
+                    liquid: 0,
+                };
                 //opts.floorChars=['.'];
                 break;
             case 'Cold':
@@ -17,12 +24,26 @@ var RoomGen = {
                 opts.floorColor='#bbf';
                 opts.roomOpts=this.roomOpts;
                 opts.tags=['cold'];
+                opts.features={
+                    lake:0.5,
+                    river: 0.3,
+                    entitycluster: 0.4,
+                    forcluster:['Ice'],
+                    liquid: 0,
+                };
                 //opts.floorChars=['.'];
                 break;
             case 'Cave':
                 opts.wallColor='#c63';
                 opts.floorColor='#b52';
                 opts.roomOpts=['caveRoom','roundRoom'];
+                opts.features={
+                    lake:0.5,
+                    river: 0.3,
+                    entitycluster: 0,
+                    forcluster:[],
+                    liquid: 0,
+                };
                 //opts.floorChars=['.',];
                 break;
             case 'Hot':
@@ -30,17 +51,38 @@ var RoomGen = {
                 opts.floorColor='#e20';
                 opts.roomOpts=this.roomOpts;
                 opts.tags=['hot'];
+                opts.features={
+                    lake:0.3,
+                    river: 0.1,
+                    entitycluster: 0,
+                    forcluster:[],
+                    liquid: 1,
+                };
                 //opts.floorChars=['.'];
                 break;
             case 'Jungle':
                 opts.wallColor='#0f0';
                 opts.floorColor='#0e0';
                 opts.roomOpts=['caveRoom','roundRoom'];
+                opts.features={
+                    lake:0.1,
+                    river: 0.2,
+                    entitycluster: 0,
+                    forcluster:[],
+                    liquid: 0,
+                };
                 break;
             case 'Swamp':
                 opts.wallColor='#0c3';
                 opts.floorColor='#0b2';
                 opts.roomOpts=['caveRoom','roundRoom'];
+                opts.features={
+                    lake:0.8,
+                    river: 0.1,
+                    entitycluster: 0,
+                    forcluster:[],
+                    liquid: 0,
+                };
                 break;
                 //opts.floorChars=['.',','];
         }
@@ -63,8 +105,24 @@ var RoomGen = {
         this.wallDirections(newWalls);
         Game.roomNames.push("Room #"+k);
         Game.roomTags[k]=opts.tags;
+
+        // Features
+        if ('features' in opts) {
+
+            if ('lake' in opts.features && opts.features.lake > ROT.RNG.getUniform()) {
+                this.addLake(k, roomBounds, opts.features.liquid);
+
+            }
+            else if ('river' in opts.features && opts.features.river > ROT.RNG.getUniform()) {
+                this.addRiver(k, roomBounds, opts.features.liquid);
+            }
+
+            while ('entitycluster' in opts.features && opts.features.entitycluster > ROT.RNG.getUniform() && opts.features.forcluster.length>0) {
+                this.addEntityCluster(k,roomBounds,ROT.RNG.getItem(opts.features.forcluster));
+            }
+        }
         //this.addRiver(k,roomBounds,0);
-        this.addEntityCluster(k,roomBounds,'Ice');
+        //this.addEntityCluster(k,roomBounds,'Ice');
     },
 
     rectRoom:function(k,roomSize,opts,roomBounds) {
@@ -337,6 +395,8 @@ var RoomGen = {
         if (testKey in Game.map && Game.map[testKey].passThrough()) {
             Game.map[testKey].water=Game.minWater*2;
             Game.map[testKey].nextWater=Game.minWater*2;
+            Game.map[testKey].liquidType=liquidType;
+            Game.map[testKey].nextLiquidType=liquidType;
             Game.map[testKey].lake=true;
             if (Game.freeCells.indexOf(testKey)>=0) {
                 Game.freeCells.splice(Game.freeCells.indexOf(testKey),1); // remove option of spawning here

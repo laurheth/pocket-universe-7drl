@@ -260,6 +260,10 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
     };
 };
 
+var PushMixin = function(obj) {
+
+};
+
 var WaterMixin = function(obj,targWater,liquidType) {
     obj.liquidType=liquidType;
     obj.targWater=targWater;
@@ -532,19 +536,38 @@ var EntityMaker = {
             newThing.tempHate.push('cold');
             newThing.tempHate.push('hot');
             break;
+            case 'Reed':
+            newThing = new Entity(x,y,z,'\u2320','#0d0','Reed',true);
+            GrowMixin(newThing,0.01);
+            DestructMixin(newThing,"cut down");
+            HurtByLiquidMixin(newThing,1);
+            newThing.tempHate.push('cold');
+            newThing.tempHate.push('hot');
+            break;
             case 'Fountain':
             newThing = new Entity(x,y,z,'^','#0ff','Fountain',true);
             WaterMixin(newThing,100,0);
             HurtByLiquidMixin(newThing,1);
+            newThing.burns=false;
             break;
             case 'Volcano':
             newThing = new Entity(x,y,z,'^','#f00','Volcano',true);
             WaterMixin(newThing,60,1);
             HurtByLiquidMixin(newThing,0);
+            newThing.burns=false;
             break;
-            case 'Obsidian':
-            newThing = new Entity(x,y,z,'#','#ccc','Obsidian',false);
-            DestructMixin(newThing);
+            case 'Statue':
+            newThing = new Entity(x,y,z,'\u03A9','#ddd','Statue',true);
+            PushMixin(newThing);
+            //DestructMixin(newThing,"smash");
+            newThing.burns=false;
+            break;
+            case 'Candelabra':
+            newThing = new Entity(x,y,z,'\u03A8','#ff0','Candelabra',true);
+            //DestructMixin(newThing,"knock over");
+            PushMixin(newThing);
+            HurtByLiquidMixin(newThing,1);
+            newThing.burns=false;
             break;
             case 'Ice':
             newThing = new Entity(x,y,z,'#','#0ff','Ice',false);
