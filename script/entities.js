@@ -15,6 +15,9 @@ function Entity (x,y,z,char,color,name, lightPasses=true) {
     this.burns=true;
     this.violent=false;
     this.dmg=0;
+    this.stunned=false;
+    this.slow=false;
+    this.sturdy=false;
     Game.map[x+','+y+','+z].entity=this;
 };
 
@@ -113,13 +116,19 @@ Entity.prototype.common = function() {
     }
 }
 
-var ChaseMixin = function(obj,verb="attacks",dmg) {
+var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
     obj.dmg=dmg;
+    obj.slow=slow;
     obj.violent=true;
     obj.verb=verb;
+    obj.sturdy=sturdy;
     obj.act = function () {
         this.common();
         if (!this.active) {
+            return;
+        }
+        if (this.stunned) {
+            this.stunned=false;
             return;
         }
         var success = false;
@@ -143,6 +152,9 @@ var ChaseMixin = function(obj,verb="attacks",dmg) {
                 }
             }
         }
+        if (this.slow) {
+            this.stunned=true;
+        }
     };
     obj.actOn = function(direction) {
         // shove!
@@ -155,11 +167,16 @@ var ChaseMixin = function(obj,verb="attacks",dmg) {
 
             }
         }*/
-        Game.sendMessage("You push the "+this.name.toLowerCase()+" away!");
-        this.step(direction[0], direction[1]);
-        this.step(direction[0], direction[1]);
-        if (ROT.RNG.getUniform()>0.5) {
+        if (!this.sturdy || ROT.RNG.getUniform() > 0.5) {
+            Game.sendMessage("You push the " + this.name.toLowerCase() + " away!");
+            this.stunned = true;
             this.step(direction[0], direction[1]);
+            if (ROT.RNG.getUniform() > 0.5 && !this.sturdy) {
+                this.step(direction[0], direction[1]);
+            }
+        }
+        else {
+            Game.sendMessage("You try to push the " + this.name.toLowerCase() + ", but they don't budge!");
         }
     };
 };
@@ -348,6 +365,11 @@ var EntityMaker = {
             case 'Goblin':
             newThing = new Entity(x,y,z,'g','#0f0','Goblin',true);
             ChaseMixin(newThing,'attacks',2);
+            HurtByLiquidMixin(newThing,1);
+            break;
+            case 'Snail':
+            newThing = new Entity(x,y,z,'a','#990','Giant snail',true);
+            ChaseMixin(newThing,'attacks',4,true,true);
             HurtByLiquidMixin(newThing,1);
             break;
             case 'Plant':
