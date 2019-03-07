@@ -431,6 +431,13 @@ var EntityMaker = {
             ChaseMixin(newThing,'attacks',3,false,true);
             newThing.burns=false;
             break;
+            case 'BronzeGolem':
+            newThing = new Entity(x,y,z,'G','#oaf','Bronze Golem',true);
+            ChaseMixin(newThing,'smashes',5,true,true);
+            newThing.burns=false;
+            HurtByLiquidMixin(newThing,1); // melted by lava
+            MeltMixin(newThing,1);
+            break;
             case 'Snake':
             newThing = new Entity(x,y,z,'S','#0f0','Goblin',true);
             ChaseMixin(newThing,'bites',2);
@@ -470,8 +477,8 @@ var EntityMaker = {
             HurtByLiquidMixin(newThing,1);
             newThing.tempHate.push('cold');
             break;
-            case 'Plant':
-            newThing = new Entity(x,y,z,'P','#0f0','Plant',true);
+            case 'CreepingVine':
+            newThing = new Entity(x,y,z,'f','#0f0','Creeping Vine',true);
             GrowMixin(newThing,0.2);
             DestructMixin(newThing,"cut down");
             HurtByLiquidMixin(newThing,1);
@@ -496,6 +503,7 @@ var EntityMaker = {
             newThing = new Entity(x,y,z,'#','#0ff','Ice',false);
             HurtByLiquidMixin(newThing,1); // melted by lava
             MeltMixin(newThing,0);
+            newThing.burns=false;
             break;
         }
         return newThing;

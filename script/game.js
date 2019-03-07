@@ -72,7 +72,7 @@ var Game = {
 
         this.scheduler = new ROT.Scheduler.Simple();
         this.scheduler.add(this.player, true);
-        this.scheduler.add(this._addEntity('Plant'),true);
+        //this.scheduler.add(this._addEntity('Plant'),true);
         //this.scheduler.add(this._addEntity('Snail'),true);
         //this.scheduler.add(this._addEntity('Volcano'),true);
         //this.scheduler.add(this._addEntity('Fountain'),true);
@@ -404,6 +404,7 @@ Player.prototype.dropPortal = function() {
         return false;
     }
     this.heldPortal.drop(this.x,this.y,this.z);
+    this.heldPortal.open=true;
     this.heldPortal=null;
     Game.sendMessage("You drop the portal. It attaches itself to the wall and opens!");
     return true;
@@ -422,6 +423,9 @@ Player.prototype.getPortal = function() {
             let testKey = (this.x+i)+','+(this.y+j)+','+this.z;
             if (testKey in Game.map && Game.map[testKey].contains != null && Game.map[testKey].contains instanceof Connection && Game.map[testKey].contains != standPortal) {
                 //Game.map[testKey].contains.open = openClose;
+                if (Game.map[testKey].entity != null) {
+                    continue;
+                }
                 portalToGet=Game.map[testKey].contains;
                 portalToGet.grabFrom(testKey);
                 Game.map[testKey].contains=null;
@@ -434,7 +438,7 @@ Player.prototype.getPortal = function() {
         }
     }
     if (!success) {
-        Game.sendMessage("No portal within reach.");
+        Game.sendMessage("No valid portal within reach.");
         return success;
     }
 
@@ -924,11 +928,13 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
                 checkZ = 0;
             }
         }
-        if (!which) {
-            checkZ = this.p1[2];
-        }
         else {
-            checkZ = this.p2[2];
+            if (!which) {
+                checkZ = this.p1[2];
+            }
+            else {
+                checkZ = this.p2[2];
+            }
         }
         if (checkZ >=0 && checkZ < Game.roomNames.length) {
             return Game.roomNames[checkZ];
@@ -1011,9 +1017,12 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
     };
 
     this.actOn=function(direction) {
+        if (this.getChar()=='x') {
+            Game.sendMessage("This portal is sealed from the other side.");
+        }
         if (this.open) {
             for (let q=0;q<2;q++) {
-                if (Game.map[this.getKey(q)].entity != null && 'actOn' in Game.map[this.getKey(q)].entity) {
+                if (this.getKey(q) in Game.map && Game.map[this.getKey(q)].entity != null && 'actOn' in Game.map[this.getKey(q)].entity) {
                     Game.map[this.getKey(q)].entity.actOn(direction);
                 }
             }

@@ -250,24 +250,24 @@ var RoomGen = {
         //console.log(newWalls);
         var orientations = [
             [
-                [0,0,2],
-                [0,0,1],
-                [0,0,2]
+                [2,0,2],
+                [-1,0,1],
+                [2,0,2]
             ],
             [
-                [0,0,0],
+                [2,-1,2],
                 [0,0,0],
                 [2,1,2]
             ],
             [
-                [2,0,0],
-                [1,0,0],
-                [2,0,0]
+                [2,0,2],
+                [1,0,-1],
+                [2,0,2]
             ],
             [
                 [2,1,2],
                 [0,0,0],
-                [0,0,0]
+                [2,-1,2]
             ],
         ];
         for (let q=0;q<newWalls.length;q++) {
@@ -287,7 +287,7 @@ var RoomGen = {
                     let testKey=(px+i)+','+(py+j)+','+pz;
                     var thisTile;
                     if (!(testKey in Game.map)) {
-                        thisTile=0;
+                        thisTile=-1;
                     }
                     else if (Game.map[testKey].passThrough()) {
                         thisTile=1;
