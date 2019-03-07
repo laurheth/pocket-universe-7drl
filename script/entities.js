@@ -254,7 +254,7 @@ Entity.prototype.step = function(dx,dy,justCheck=false) {
 
     if (this.violent && newKey in Game.map && Game.map[newKey].entity != null && Game.map[newKey].entity == Game.player) {
         //Game.sendMessage("The "+this.name.toLowerCase()+" attacks you!");
-        Game.statusMessage("The "+this.name.toLowerCase()+" "+this.verb+" you!",'Wounded');
+        Game.statusMessage("The "+this.name.toLowerCase()+" "+this.verb+" you!",'Bleeding');
         Game.player.wound(this.dmg);
         return newKey;
     }

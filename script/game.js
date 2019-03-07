@@ -26,7 +26,7 @@ var Game = {
         let screen = document.getElementById('screen');
         this.display = new ROT.Display({fontSize:19,fontFamily:'Overpass Mono, monospace'});
         var setsize=this.display.computeSize(screen.clientWidth,screen.clientHeight);
-        console.log(screen.clientWidth+','+screen.clientHeight);
+        //console.log(screen.clientWidth+','+screen.clientHeight);
         this.display.setOptions({width: setsize[0],height: setsize[1]});
         this.offset[0] = parseInt(setsize[0]/2);
         this.offset[1] = parseInt(setsize[1]/2);
@@ -87,8 +87,9 @@ var Game = {
         
         var newPortal=null;
         var pC;
-        for (let k = 0; k < 6; k++) { // dimension
-            let roomSize=[10+k,10+k];
+        var k=0;
+        while (this.freeCells.length < 300+(40*this.level) && k<(5+this.level)) { // dimension
+            let roomSize=[Math.floor((12+Math.sqrt(this.level))*ROT.RNG.getUniform())+6,Math.floor((12+Math.sqrt(this.level))*ROT.RNG.getUniform())+6];
             if (k>0 && this.walls.length>0) {
                 let index = Math.floor(ROT.RNG.getUniform() * this.walls.length);
                 let key = this.walls.splice(index, 1)[0];
@@ -99,17 +100,21 @@ var Game = {
                 pC=[parseInt(roomSize[0]/2) , parseInt(roomSize[1]/2),k , px, py, pz];
             }
 
+            //console.log(this.freeCells.length);
             RoomGen.generateRoom(k,roomSize);
+            //console.log(this.freeCells.length);
 
             if (k>0 && this.walls.length>0) {
+                //console.log(pC);
                 newPortal = new Connection(pC[0],pC[1],pC[2],pC[3],pC[4],pC[5]);
-                this.map[newPortal.getKey(1)].contains=newPortal;
-                this.map[newPortal.getKey(0)].contains=newPortal;
+                //this.map[newPortal.getKey(1)].contains=newPortal;
+                //this.map[newPortal.getKey(0)].contains=newPortal;
                 newPortal.correctEntrance(1);
                 newPortal.correctEntrance(0);
             }
+            k++;
         }
-
+        var numConnections=Math.max(3,parseInt(k/3));
         if (this.walls.length > 0) {
             for (let k = 0; k < 3; k++) {
                 for (let i = 0; i < 2; i++) {
@@ -635,13 +640,27 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
         var pother;
         if (!which) {
             pother=this.p2;
-            desiredDirection=Game.map[this.getKey(0)].getDirection();
-            Game.map[this.getKey(1)].contains=null;
+            if (this.getKey(0) in Game.map) {
+                desiredDirection=Game.map[this.getKey(0)].getDirection();
+            }
+            else {
+                desiredDirection=-1;
+            }
+            if (this.getKey(1) in Game.map && Game.map[this.getKey(1)].contains == this) {
+                Game.map[this.getKey(1)].contains=null;
+            }
         }
         else {
             pother=this.p1;
-            desiredDirection=Game.map[this.getKey(1)].getDirection();
-            Game.map[this.getKey(0)].contains=null;
+            if (this.getKey(1) in Game.map) {
+                desiredDirection=Game.map[this.getKey(1)].getDirection();
+            }
+            else {
+                desiredDirection=-1;
+            }
+            if (this.getKey(0) in Game.map && Game.map[this.getKey(0)].contains == this) {
+                Game.map[this.getKey(0)].contains=null;
+            }
         }
         var acceptAny=false;
         if (desiredDirection==-1) {
@@ -651,26 +670,39 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
         desiredDirection%=4;
         //console.log(desiredDirection);
         let breaker=0;
+        var success=false;
         var newKey;
-        while (breaker<30) {
+        while (breaker<100 && !success) {
             for (let i=-breaker;i<breaker;i++) {
                 for (let j=-breaker;j<breaker;j++) {
                     newKey=(pother[0]+i)+','+(pother[1]+j)+','+pother[2];
                     if (newKey in Game.map && (Game.noOtherPortals(pother[0]+i,pother[1]+j,pother[2])) &&(Game.map[newKey].getDirection() == desiredDirection || (acceptAny && Game.map[newKey].getDirection() >= 0))) {
                         pother[0]+=i;
                         pother[1]+=j;
+                        success=true;
                         break;
                     }
+                }
+                if (success) {
+                    break;
                 }
             }
             breaker++;
         }
+        if (!success) {return;}
+        console.log(newKey +' '+pother);
         if (!which) {
             this.p2=pother;
+            if (!(this.getKey(1) in Game.map)) {
+                this.correctEntrance(1);
+            }
             Game.map[this.getKey(1)].contains=this;
         }
         else {
             this.p1=pother;
+            if (!(this.getKey(0) in Game.map)) {
+                this.correctEntrance(0);
+            }
             Game.map[this.getKey(0)].contains=this;
         }
     };
