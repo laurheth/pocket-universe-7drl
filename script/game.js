@@ -42,6 +42,8 @@ var Game = {
         this.messages = document.getElementById('messages');
         this.holdPortal = document.getElementById('holdPortal');
         //this.holdPortal.innerHTML = 'Holding portal to: dungeon of despair';
+        this.scheduler = new ROT.Scheduler.Simple();
+
         this._generateMap();
 
         var lightPasses = function (x, y, def=false) {
@@ -70,10 +72,12 @@ var Game = {
         //this._drawVisible();
         //this.player.draw();
 
-        this.scheduler = new ROT.Scheduler.Simple();
+        
         this.scheduler.add(this.player, true);
         //this.scheduler.add(this._addEntity('Plant'),true);
-        //this.scheduler.add(this._addEntity('Snail'),true);
+        this.scheduler.add(this._addEntity('FlameDemon'),true);
+        this.scheduler.add(this._addEntity('FlameDemon'),true);
+        this.scheduler.add(this._addEntity('FlameDemon'),true);
         //this.scheduler.add(this._addEntity('Volcano'),true);
         //this.scheduler.add(this._addEntity('Fountain'),true);
         this.scheduler.add(TileManager,true);
@@ -191,6 +195,19 @@ var Game = {
         let py = parseInt(parts[1]);
         let pz = parseInt(parts[2]);
         return EntityMaker.makeByName(name,px,py,pz);//new Entity(px,py,pz,'g','#0f0','Goblin',true);
+    },
+
+    addEntity: function(name,x,y,z) {
+        let key=x+','+y+','+z;
+        if (key in Game.map && Game.map[key].entity == null && Game.map[key].passThrough()) {
+            var newEntity=EntityMaker.makeByName(name,x,y,z);
+            if (newEntity!=null) {
+                Game.scheduler.add(newEntity,true);
+                if (Game.freeCells.indexOf(key)>=0) {
+                    Game.freeCells.splice(Game.freeCells.indexOf(key),1); // remove option of spawning here
+                }
+            }
+        }
     },
 
     _drawVisible: function() {
@@ -480,6 +497,7 @@ Player.prototype.openPortal = function(openClose) {
 
 Player.prototype.act = function () {
     Game.engine.lock();
+    console.log(this.getKey());
     Game.playerName.innerHTML="Lauren";
     Game.dungeonInfo.innerHTML="Dungeon Level "+Game.level+"<br>";//+Game.roomNames[this.z];
     if (this.z>=0 && this.z < Game.roomNames.length) {
@@ -1095,9 +1113,9 @@ var TileManager = {
                                 else {
                                     Game.map[testTile].nextWater+=flowRate;
                                     Game.map[tiles[i]].nextWater-=flowRate;
-                                    if (Game.map[testTile].entity != null && 'hurtByLiquid' in Game.map[testTile].entity) {
+                                    /*if (Game.map[testTile].entity != null && 'hurtByLiquid' in Game.map[testTile].entity) {
                                         Game.map[testTile].entity.hurtByLiquid(Game.map[tiles[i]].liquidType);
-                                    }
+                                    }*/
                                 }
                             }
                         }

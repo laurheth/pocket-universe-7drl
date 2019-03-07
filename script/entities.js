@@ -6,7 +6,8 @@ function Entity (x,y,z,char,color,name, lightPasses=true) {
     this.soonToBeOnFire=false;
     this.active=true;
     this.targetDir=null;
-    //this.target=target;
+    this.targetPos=null;
+    this.chaseTimer=0;
     this.char=char;
     this.color=color;
     this.name=name;
@@ -21,6 +22,7 @@ function Entity (x,y,z,char,color,name, lightPasses=true) {
     this.sturdy=false;
     this.tempHate=[];
     this.hateCounter=0;
+    this.hurtByLiquidType=-1;
     Game.map[x+','+y+','+z].entity=this;
 };
 
@@ -40,6 +42,7 @@ Entity.prototype.getKey = function() {
 };
 
 Entity.prototype.act = function() {
+    this.common();
 };
 
 Entity.prototype.spreadFire = function(key) {
@@ -91,6 +94,7 @@ Entity.prototype.spreadFire = function(key) {
 };
 
 Entity.prototype.common = function() {
+    
     if (!this.active) {return;}
     if (this.z in Game.roomTags && this.tempHate.length>0) {
         for (let i=0;i<this.tempHate.length;i++) {
@@ -109,6 +113,10 @@ Entity.prototype.common = function() {
             if (this.isPlant) {
                 Game.sendMessage(message + " withered away.", true, this.getKey());
             }
+            else if ('melt' in this) {
+                this.melt();
+                return;
+            }
             else {
                 if (this.tempHate[0] == 'hot') {
                     message += " died from the heat!";
@@ -120,6 +128,12 @@ Entity.prototype.common = function() {
 
             }
             return;
+        }
+    }
+
+    if (Game.map[this.getKey()].water > Game.minWater) {
+        if ('hurtByLiquid' in this) {
+            this.hurtByLiquid(Game.map[this.getKey()].liquidType);
         }
     }
 
@@ -184,8 +198,23 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
         var success = false;
         var breaker = 0;
         if (Game.player.z == this.z) {
-            this.targetDir = [Math.sign(-this.x + Game.player.x), Math.sign(-this.y + Game.player.y)];
-            //this.targetPos=[Game.player.x,Game.player.y];
+            this.targetPos=[Game.player.x,Game.player.y];
+            this.chaseTimer=6;
+        }
+        if (this.chaseTimer<=0) {
+            this.targetPos=null;
+        }
+        else {
+            this.chaseTimer--;
+        }
+        
+        if (this.targetPos != null) {
+            if (this.targetPos[0] == this.x && this.targetPos[1] == this.y) {
+                this.targetPos=null;
+            }
+            else {
+                this.targetDir = [Math.sign(-this.x + this.targetPos[0]), Math.sign(-this.y + this.targetPos[1])];
+            }
         }
         if (this.onFire>=0 && !this.immuneToFire) {
             this.targetDir=null;
@@ -193,10 +222,10 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
         while (!success && breaker < 5) {
             breaker++;
             if (this.targetDir == null) {
-                success = this.step(Math.floor(ROT.RNG.getUniform() * 3) - 1, Math.floor(ROT.RNG.getUniform() * 3) - 1);
+                success = this.step(Math.floor(ROT.RNG.getUniform() * 3) - 1, Math.floor(ROT.RNG.getUniform() * 3) - 1,false,true);
             }
             else {
-                success = this.step(this.targetDir[0], this.targetDir[1]);
+                success = this.step(this.targetDir[0], this.targetDir[1],false,true);
                 if (!success) {
                     this.targetDir = null;
                 }
@@ -308,7 +337,7 @@ var HurtByLiquidMixin = function(obj,liquidType) {
                 }
             }
             else {
-                Game.sendMessage("The "+this.name.toLowerCase()+" was destroyed.",true,this.getKey());
+                Game.sendMessage("The "+this.name.toLowerCase()+" was destroyed by the water!",true,this.getKey());
                 Game.map[this.getKey()].entity=null;
                 this.active=false;
             }
@@ -327,7 +356,7 @@ var MeltMixin = function (obj, liquidType) {
     }
 }
 
-Entity.prototype.step = function(dx,dy,justCheck=false) {
+Entity.prototype.step = function(dx,dy,justCheck=false,beSafe=false) {
     //console.log(dx+','+dy);
     var newKey=((this.x+dx)+','+(this.y+dy)+','+this.z);
 
@@ -361,14 +390,14 @@ Entity.prototype.step = function(dx,dy,justCheck=false) {
         }
     }
 
-    if (((this.x+dx)+','+(this.y+dy)+','+this.z) in Game.map && Game.map[((this.x+dx)+','+(this.y+dy)+','+this.z)].passThrough()) {
+    if (((this.x+dx)+','+(this.y+dy)+','+this.z) in Game.map && Game.map[((this.x+dx)+','+(this.y+dy)+','+this.z)].passThrough() && (!beSafe || this.checkSafe(((this.x+dx)+','+(this.y+dy)+','+this.z))) ) {
         newKey=((this.x+dx)+','+(this.y+dy)+','+this.z);
     }
-    else if (((this.x+dx)+','+this.y+','+this.z) in Game.map && Game.map[((this.x+dx)+','+this.y+','+this.z)].passThrough()) {
+    else if (((this.x+dx)+','+this.y+','+this.z) in Game.map && Game.map[((this.x+dx)+','+this.y+','+this.z)].passThrough() && (!beSafe || this.checkSafe(((this.x+dx)+','+(this.y+dy)+','+this.z)))) {
         dy=0;
         newKey=((this.x+dx)+','+this.y+','+this.z);
     }
-    else if ((this.x+','+(this.y+dy)+','+this.z) in Game.map && Game.map[(this.x+','+(this.y+dy)+','+this.z)].passThrough()) {
+    else if ((this.x+','+(this.y+dy)+','+this.z) in Game.map && Game.map[(this.x+','+(this.y+dy)+','+this.z)].passThrough() && (!beSafe || this.checkSafe(((this.x+dx)+','+(this.y+dy)+','+this.z)))) {
         dx=0;
         newKey=((this.x+dx)+','+(this.y+dy)+','+this.z);
     }
@@ -413,6 +442,24 @@ Entity.prototype.step = function(dx,dy,justCheck=false) {
         }
     //}
     return newKey;
+};
+
+Entity.prototype.checkSafe = function(testKey) {
+    //let testKey=x+','+y+','+z;
+    var result=1; // determine probability of taking the risk
+    if (testKey in Game.map) {
+        if (Game.map[testKey].water > Game.minWater && Game.map[testKey].liquidType == this.hurtByLiquidType) {
+            result = 0; // don't step into lava
+        }
+        if (this.z in Game.roomTags && this.tempHate.length>0) {
+            for (let i=0;i<this.tempHate.length;i++) {
+                if (Game.roomTags[this.z].indexOf(this.tempHate[i])>=0) {
+                    result *= 0.8;
+                }
+            }
+        }
+    }
+    return result > ROT.RNG.getUniform();
 };
 
 var EntityMaker = {
@@ -504,6 +551,7 @@ var EntityMaker = {
             HurtByLiquidMixin(newThing,1); // melted by lava
             MeltMixin(newThing,0);
             newThing.burns=false;
+            newThing.tempHate.push('hot','temperate');
             break;
         }
         return newThing;

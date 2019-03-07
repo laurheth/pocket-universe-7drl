@@ -3,7 +3,7 @@ var RoomGen = {
     roomOpts:['rectRoom','roundRoom','tRoom','caveRoom','hallRoom'],
     biomeOpts:function(biome) {
         var opts={};
-        opts.tags=[];
+        opts.tags=['temperate'];
         switch (biome) {
             default:
             case 'Dungeon':
@@ -52,17 +52,23 @@ var RoomGen = {
         //this.rectRoom(k,roomSize);
         var biomeList=['Dungeon','Cold','Cave','Hot','Jungle','Swamp'];
         var opts=this.biomeOpts(ROT.RNG.getItem(biomeList));
+        var roomBounds=[0,0,0,0];
         //console.log(opts);
         //var roomOpts = ['rectRoom','roundRoom','tRoom','caveRoom','hallRoom'];
         let thisRoom = ROT.RNG.getItem(opts.roomOpts);
-        newWalls=this[thisRoom](k,roomSize,opts);
+        console.log(roomBounds);
+        newWalls=this[thisRoom](k,roomSize,opts,roomBounds);
+        console.log(roomBounds);
         console.log(thisRoom+' '+roomSize+' '+k);
         this.wallDirections(newWalls);
         Game.roomNames.push("Room #"+k);
         Game.roomTags[k]=opts.tags;
+        //this.addRiver(k,roomBounds,0);
+        this.addEntityCluster(k,roomBounds,'Ice');
     },
 
-    rectRoom:function(k,roomSize,opts) {
+    rectRoom:function(k,roomSize,opts,roomBounds) {
+        roomBounds[0]=0; roomBounds[1]=0; roomBounds[2]=roomSize[0]; roomBounds[3]=roomSize[1];
         var newWalls=[];
         for (let i = 0; i <= roomSize[0]; i++) { //x
             for (let j = 0; j <= roomSize[1]; j++) {//y
@@ -81,7 +87,8 @@ var RoomGen = {
         return newWalls;
     },
 
-    tRoom:function(k,roomSize,opts) {
+    tRoom:function(k,roomSize,opts,roomBounds) {
+        roomBounds[0]=0; roomBounds[1]=0; roomBounds[2]=roomSize[0]; roomBounds[3]=roomSize[1];
         var newWalls=[];
         var midpoints;
         var newKey;
@@ -113,7 +120,7 @@ var RoomGen = {
         return newWalls;
     },
 
-    caveRoom: function(k,roomSize,opts) {
+    caveRoom: function(k,roomSize,opts,roomBounds) {
         var targFree=Game.freeCells.length + roomSize[0] * roomSize[1];
         var x=0;
         var y=0;
@@ -123,6 +130,10 @@ var RoomGen = {
         while (Game.freeCells.length < targFree && breaker<100) {
             breaker++;
             this.carveHall(x,y,k,thickness,opts,newWalls);
+            if (x-1 < roomBounds[0]) {roomBounds[0]=x-1;}
+            if (y-1 < roomBounds[1]) {roomBounds[1]=y-1;}
+            if (x+thickness/2+1 > roomBounds[2]) {roomBounds[2]=x+thickness/2+1;}
+            if (y+thickness/2+1 > roomBounds[3]) {roomBounds[3]=y+thickness/2+1;}
             if (ROT.RNG.getUniform()>0.5) {
                 if (ROT.RNG.getUniform()>0.5) {
                     x++;
@@ -143,7 +154,8 @@ var RoomGen = {
         return newWalls;
     },
 
-    hallRoom: function(k,roomSize,opts) {
+    hallRoom: function(k,roomSize,opts,roomBounds) {
+        //roomBounds=[0,0,roomSize[0],roomSize[1]];
         var targFree=Game.freeCells.length + roomSize[0] * roomSize[1];
         var x=0;
         var y=0;
@@ -157,6 +169,10 @@ var RoomGen = {
         while (Game.freeCells.length < targFree && breaker<100) {
             breaker++;
             this.carveHall(x,y,k,thickness,opts,newWalls);
+            if (x-1 < roomBounds[0]) {roomBounds[0]=x-1;}
+            if (y-1 < roomBounds[1]) {roomBounds[1]=y-1;}
+            if (x+thickness/2+1 > roomBounds[2]) {roomBounds[2]=x+thickness/2+1;}
+            if (y+thickness/2+1 > roomBounds[3]) {roomBounds[3]=y+thickness/2+1;}
             x+=direction[0];
             y+=direction[1];
             if (ROT.RNG.getUniform()<twistyness) {
@@ -186,6 +202,7 @@ var RoomGen = {
     },
 
     carveHall: function(x,y,z,thickness,opts,newWalls) {
+        //roomBounds=[0,0,roomSize[0],roomSize[1]];
         for (let i=0;i<thickness;i++) {
             for (let j=0;j<thickness;j++) {
                 let newKey=(x+i)+','+(y+j)+','+z;
@@ -206,9 +223,10 @@ var RoomGen = {
         return newWalls;
     },
 
-    roundRoom:function(k,roomSize,opts) {
+    roundRoom:function(k,roomSize,opts,roomBounds) {
+        roomBounds[0]=0; roomBounds[1]=0; roomBounds[2]=roomSize[0]; roomBounds[3]=roomSize[1];
         var newWalls=[];
-        var radius=[parseInt(roomSize[1]/2),parseInt(roomSize[0]/2)];
+        var radius=[parseInt(roomSize[0]/2),parseInt(roomSize[1]/2)];
         for (let i=-radius[0]-1;i<=radius[0]+1;i++) {
             for (let j=-radius[1]-1;j<=radius[1]+1;j++) {
                 let newKey = (i+radius[0]) + ',' + (j+radius[1]) + ',' + k;
@@ -225,7 +243,106 @@ var RoomGen = {
         return newWalls;
     },
 
-    
+    addEntityCluster : function(k, roomBounds,entityName,steps=-1) {
+        let sx=Math.floor(ROT.RNG.getUniform()*(roomBounds[2]-roomBounds[0])) + roomBounds[0];
+        let sy=Math.floor(ROT.RNG.getUniform()*(roomBounds[3]-roomBounds[1])) + roomBounds[1];
+        var x = sx;
+        var y = sy;
+        if (steps<0) {
+            steps = Math.floor(ROT.RNG.getUniform()*20)+20;
+        }
+        while (steps>0) {
+            let dir=this.randOrtho();
+            x+=dir[0];
+            y+=dir[1];
+            Game.addEntity(entityName,x,y,k);
+            steps--;
+            if (x<roomBounds[0] || x>roomBounds[2] || y < roomBounds[1] || y>roomBounds[3]) {
+                x=sx;
+                y=sy;
+            }
+        }
+    },
+
+    addRiver : function(k,roomBounds,liquidType,width=-1) {
+        if (width<0) {width=Math.floor(ROT.RNG.getUniform()*3)+1;}
+        var direction;
+        var x;
+        var y;
+        var steps;
+        if (ROT.RNG.getUniform()>0.5) {
+            direction=[1,0];
+            x = roomBounds[0];
+            y = (roomBounds[1]+roomBounds[3])/2;
+            steps=roomBounds[2]-roomBounds[0];
+        }
+        else {
+            direction=[0,1];
+            y = roomBounds[1];
+            x = (roomBounds[0]+roomBounds[2])/2;
+            steps=roomBounds[3]-roomBounds[1];
+        }
+        x = Math.floor(x);
+        y = Math.floor(y);
+        for (let i=-1;i<=steps+5;i++) {
+            if (ROT.RNG.getUniform()>0.5) {
+                if (ROT.RNG.getUniform()>0.5) {
+                    width++;
+                }
+                else {
+                    width--;
+                }
+                if (width<1) {width=1;}
+            }
+            if (ROT.RNG.getUniform()>0.5) {
+                if (ROT.RNG.getUniform()>0.5) {
+                    x+=direction[1];
+                    y+=direction[0];
+                }
+                else {
+                    x-=direction[1];
+                    y-=direction[0];
+                }
+            }
+            for (let j=-width;j<width;j++) {
+                this.makeLiquidTile(x+i*direction[0]+j*direction[1],y+i*direction[1]+j*direction[0],k,liquidType);
+            }
+        }
+    },
+
+    addLake : function(k, roomBounds,liquidType,steps=-1) {
+        let sx=Math.floor(ROT.RNG.getUniform()*(roomBounds[2]-roomBounds[0])) + roomBounds[0];
+        let sy=Math.floor(ROT.RNG.getUniform()*(roomBounds[3]-roomBounds[1])) + roomBounds[1];
+        var x = sx;
+        var y = sy;
+        if (steps<0) {
+            steps = Math.floor(ROT.RNG.getUniform()*40)+40;
+        }
+        while (steps>0) {
+            let dir=this.randOrtho();
+            x+=dir[0];
+            y+=dir[1];
+            this.makeLiquidTile(x,y,k,liquidType);
+            steps--;
+            if (x<roomBounds[0] || x>roomBounds[2] || y < roomBounds[1] || y>roomBounds[3]) {
+                x=sx;
+                y=sy;
+            }
+        }
+    },
+
+    // Water features
+    makeLiquidTile : function(x,y,z,liquidType) {
+        let testKey = x+','+y+','+z;
+        if (testKey in Game.map && Game.map[testKey].passThrough()) {
+            Game.map[testKey].water=Game.minWater*2;
+            Game.map[testKey].nextWater=Game.minWater*2;
+            Game.map[testKey].lake=true;
+            if (Game.freeCells.indexOf(testKey)>=0) {
+                Game.freeCells.splice(Game.freeCells.indexOf(testKey),1); // remove option of spawning here
+            }
+        }
+    },
 
     wallDirections:function(newWalls) {
         // clean up extraneous walls
