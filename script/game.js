@@ -66,8 +66,8 @@ var Game = {
 
         this.scheduler = new ROT.Scheduler.Simple();
         this.scheduler.add(this.player, true);
-        this.scheduler.add(this._addEntity('Goblin'),true);
-        this.scheduler.add(this._addEntity('Volcano'),true);
+        //this.scheduler.add(this._addEntity('Goblin'),true);
+        //this.scheduler.add(this._addEntity('Volcano'),true);
         //this.scheduler.add(this._addEntity('Fountain'),true);
         this.scheduler.add(TileManager,true);
         this.engine = new ROT.Engine(this.scheduler);
