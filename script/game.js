@@ -7,6 +7,7 @@ var Game = {
     fov: null,
     portalFov: null,
     portalFovZ: 0,
+    portalFovPortal: null,
     delta: [0,0],
     offset: [39, 13],
     walls: null,
@@ -38,18 +39,18 @@ var Game = {
         this.messages = document.getElementById('messages');
         this._generateMap();
 
-        var lightPasses = function (x, y) {
+        var lightPasses = function (x, y, def=false) {
             //return true;
             var key = x + ',' + y + ',' + Game.player.z;
             if (key in Game.map) {
                 return ((Game.map[key].lightPasses()));
             }
-            return true;
+            return def;
         }
 
         var lightPassesPortal = function (x, y) {
             //return true;
-            if (!lightPasses(x+Game.delta[0],y+Game.delta[1])) {
+            if (!lightPasses(x+Game.delta[0],y+Game.delta[1],true)) {
                 return false;
             }
             var key = x + ',' + y + ',' + Game.portalFovZ;
@@ -61,7 +62,7 @@ var Game = {
 
         this.fov = new ROT.FOV.PreciseShadowcasting(lightPasses);
         this.portalFov = new ROT.FOV.PreciseShadowcasting(lightPassesPortal);
-        this._drawVisible();
+        //this._drawVisible();
         //this.player.draw();
 
         this.scheduler = new ROT.Scheduler.Simple();
@@ -88,7 +89,7 @@ var Game = {
         var newPortal=null;
         var pC;
         var k=0;
-        while (this.freeCells.length < 300+(40*this.level) && k<(5+this.level)) { // dimension
+        while (this.freeCells.length < 800+(50*this.level) || k<(5+this.level)) { // dimension
             let roomSize=[Math.floor((12+Math.sqrt(this.level))*ROT.RNG.getUniform())+6,Math.floor((12+Math.sqrt(this.level))*ROT.RNG.getUniform())+6];
             if (k>0 && this.walls.length>0) {
                 let index = Math.floor(ROT.RNG.getUniform() * this.walls.length);
@@ -179,6 +180,7 @@ var Game = {
     _drawVisible: function() {
         this.__drawVisible(false); // first pass includes portals
         this.__drawVisible(true); // second only the main room, overwriting weirdness
+        this.portalFovPortal=null;
     },
 
     __drawVisible: function (secondPass) {
@@ -190,7 +192,9 @@ var Game = {
             if (key in Game.map) {
                 if (secondPass==false) {
                     if (Game.map[key].contains != null && Game.map[key].contains instanceof Connection) {
-                        Game._drawPortal(Game.map[key].contains);
+                        if (key == Game.player.getKey() || Game.map[Game.player.getKey()].contains == null || !(Game.map[Game.player.getKey()].contains instanceof Connection)) {
+                            Game._drawPortal(Game.map[key].contains);
+                        }
                     }
                 }
                 if (Game.map[key].getChar() != ' ') {
@@ -201,43 +205,44 @@ var Game = {
         });
     },
 
-    _drawPortal: function(portal,second=false) {
+    _drawPortal: function (portal, second = false) {
         //portalFovZ
         //console.log("Draw portal called");
-        this.delta=portal.getDelta();
+        this.delta = portal.getDelta();
+        this.portalFovPortal = portal;
         var portalDir;
-	if (portal.p2[2] == portal.p1[2]) {
-	    if (second) {
-		this.portalFovZ = portal.p1[2];
-	    }
-	    else {
-		this.portalFovZ = portal.p2[2];
-		for (let i=0;i<this.delta.length;i++) {
-                    this.delta[i]=-this.delta[i];
-		}
-	    }
-	}
-	else {
-            if (portal.p2[2] == this.player.z) {
-		this.portalFovZ = portal.p1[2];
+        if (portal.p2[2] == portal.p1[2]) {
+            if (second) {
+                this.portalFovZ = portal.p1[2];
             }
             else {
-		this.portalFovZ = portal.p2[2];
-		for (let i=0;i<this.delta.length;i++) {
-                    this.delta[i]=-this.delta[i];
-		}
+                this.portalFovZ = portal.p2[2];
+                for (let i = 0; i < this.delta.length; i++) {
+                    this.delta[i] = -this.delta[i];
+                }
             }
-	}
-        this.portalFov.compute(this.player.x-this.delta[0],this.player.y-this.delta[1],50, function (x,y,r,visibility) {
+        }
+        else {
+            if (portal.p2[2] == this.player.z) {
+                this.portalFovZ = portal.p1[2];
+            }
+            else {
+                this.portalFovZ = portal.p2[2];
+                for (let i = 0; i < this.delta.length; i++) {
+                    this.delta[i] = -this.delta[i];
+                }
+            }
+        }
+        this.portalFov.compute(this.player.x - this.delta[0], this.player.y - this.delta[1], 50, function (x, y, r, visibility) {
             let key = x + ',' + y + ',' + Game.portalFovZ;
             if (key in Game.map) {
-                Game.display.draw(x - Game.player.x + Game.offset[0] + Game.delta[0], y - Game.player.y + Game.offset[1]  + Game.delta[1], Game.map[key].getChar(), Game.map[key].getColor());
+                Game.display.draw(x - Game.player.x + Game.offset[0] + Game.delta[0], y - Game.player.y + Game.offset[1] + Game.delta[1], Game.map[key].getChar(), Game.map[key].getColor());
             }
         });
 
-	if (portal.p2[2] == portal.p1[2] && !second) {
-	    this._drawPortal(portal,true);
-	}
+        if (portal.p2[2] == portal.p1[2] && !second) {
+            this._drawPortal(portal, true);
+        }
     },
 
     noOtherPortals: function(x,y,z) {
@@ -739,7 +744,7 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
     };
 
     this.lightPasses=function() {
-        return this.open && (this.p1[2]==Game.portalFovZ || this.p2[2]==Game.portalFovZ);
+        return this.open && (Game.portalFovPortal==null || Game.portalFovPortal == this);
     };
 
     this.passThrough=function() {
