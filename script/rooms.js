@@ -12,8 +12,8 @@ var RoomGen = {
                 //opts.floorChars=['.'];
                 break;
             case 'Cold':
-                opts.wallColor='#eef';
-                opts.floorColor='#eef';
+                opts.wallColor='#ccf';
+                opts.floorColor='#bbf';
                 opts.roomOpts=this.roomOpts;
                 //opts.floorChars=['.'];
                 break;
