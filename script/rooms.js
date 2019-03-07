@@ -3,6 +3,7 @@ var RoomGen = {
     roomOpts:['rectRoom','roundRoom','tRoom','caveRoom','hallRoom'],
     biomeOpts:function(biome) {
         var opts={};
+        opts.tags=[];
         switch (biome) {
             default:
             case 'Dungeon':
@@ -15,6 +16,7 @@ var RoomGen = {
                 opts.wallColor='#ccf';
                 opts.floorColor='#bbf';
                 opts.roomOpts=this.roomOpts;
+                opts.tags=['cold'];
                 //opts.floorChars=['.'];
                 break;
             case 'Cave':
@@ -27,6 +29,7 @@ var RoomGen = {
                 opts.wallColor='#f31';
                 opts.floorColor='#e20';
                 opts.roomOpts=this.roomOpts;
+                opts.tags=['hot'];
                 //opts.floorChars=['.'];
                 break;
             case 'Jungle':
@@ -56,6 +59,7 @@ var RoomGen = {
         console.log(thisRoom+' '+roomSize+' '+k);
         this.wallDirections(newWalls);
         Game.roomNames.push("Room #"+k);
+        Game.roomTags[k]=opts.tags;
     },
 
     rectRoom:function(k,roomSize,opts) {

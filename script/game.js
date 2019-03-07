@@ -22,6 +22,7 @@ var Game = {
     currentTurn: 0,
     lastMessage: [""],
     roomNames:[],
+    roomTags:{},
     level: 1,
 
     init: function () {
@@ -297,6 +298,7 @@ function Player (x, y, z) {
 
 Player.prototype.seriousThreshold = {
     'Drowning': [5,'Swimming'],
+    'Hypothermia': [20,'Cold'],
 };
 
 Player.prototype.wound = function(dmg) {
@@ -484,6 +486,46 @@ Player.prototype.act = function () {
             else {
                 Game.statusMessage("The lava has set you aflame!",'Burning');
                 this.status.Burning=10;
+            }
+        }
+    }
+
+    // Cold logic
+    if (this.z in Game.roomTags && Game.roomTags[this.z].indexOf('cold')>=0 && !('Burning' in this.status)) {
+        if (!('Hypothermia' in this.status)) {
+            Game.statusMessage("It is very cold here.",'Hypothermia');
+            this.status.Hypothermia = 100;
+        }
+        else {
+            if ('Overheating' in this.status) {
+                this.status.Overheating += 6;
+            }
+            if (this.status.Hypothermia==70) {
+                Game.statusMessage("You are starting to shiver.",'Hypothermia');
+            }
+            else if (this.status.Hypothermia==20) {
+                Game.statusMessage("You're finding it hard to think clearly. Find warmth!",'Hypothermia');
+            }
+            else if (this.status.Hypothermia==5) {
+                Game.statusMessage("You are about to lose consciousness and freeze to death!",'Hypothermia');
+            }
+            else if (this.status.Hypothermia<5) {
+                Game.statusMessage("You are freezing to death!!",'Hypothermia');
+            }
+            else if (Game.map[this.getKey()].water>Game.minWater && Game.map[this.getKey()].liquidType==0) {
+                this.status.Hypothermia -= 5;
+                Game.statusMessage("This water is freezing!!",'Hypothermia');
+            }
+        }
+    }
+    else {
+        if ('Hypothermia' in this.status) {
+            if (this.status.Hypothermia < 70) {
+                this.status.Hypothermia += 6;
+            }
+            else {
+                Game.sendMessage("You feel warm again.");
+                delete this.status.Hypothermia;
             }
         }
     }
@@ -772,7 +814,7 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
             }
             breaker++;
         }
-        if (!success) {return;}
+        if (!success) {return false;}
         console.log(newKey +' '+pother);
         if (!which) {
             this.p2=pother;
@@ -788,6 +830,7 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
             }
             Game.map[this.getKey(0)].contains=this;
         }
+        return true;
     };
 
     this.drop = function(x,y,z) {
@@ -800,7 +843,9 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
             which=1;
             this.p2=[x,y,z];
         }
-        this.correctEntrance(!which,true);
+        if (!this.correctEntrance(!which,true)) {
+            this.correctEntrance(!which);
+        }
         this.correctEntrance(which);
     };
 
