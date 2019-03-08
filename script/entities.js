@@ -23,10 +23,16 @@ function Entity (x,y,z,char,color,name, lightPasses=true) {
     this.tempHate=[];
     this.hateCounter=0;
     this.hurtByLiquidType=-1;
+    this.yellSound="shouts";
+    this.seen=false;
     Game.map[x+','+y+','+z].entity=this;
 };
 
 Entity.prototype.getChar = function() {
+    if (!this.seen && this.violent) {
+        Game.sendMessage("The "+this.name.toLowerCase()+" "+this.yellSound+"!");
+        this.seen=true;
+    }
     return this.char;
 };
 
@@ -45,7 +51,7 @@ Entity.prototype.act = function() {
     this.common();
 };
 
-Entity.prototype.spreadFire = function(key) {
+spreadFire = function(key) {
     let parts = key.split(',');
     px=parseInt(parts[0]);
     py=parseInt(parts[1]);
@@ -156,11 +162,11 @@ Entity.prototype.common = function() {
         }
         if (Game.map[this.getKey()].contains != null && Game.map[this.getKey()].contains instanceof Connection) {
             for (let q=0;q<2;q++) {
-                this.spreadFire(Game.map[this.getKey()].contains.getKey(q));
+                spreadFire(Game.map[this.getKey()].contains.getKey(q));
             }
         }
         else {
-            this.spreadFire(this.getKey());
+            spreadFire(this.getKey());
         }
         if (!this.immuneToFire) {
             this.onFire++;
@@ -541,6 +547,7 @@ var EntityMaker = {
             newThing = new Entity(x,y,z,'D','#0f0','Dragon',true);
             ChaseMixin(newThing,'attacks',4,false,true);
             RangeMixin(newThing,0.2,5,6,'Burning',0.5,'*','#ff0',"breathes fire",1,"You are burning!");
+            newThing.yellSound="roars";
             break;
             case 'FrostDemon':
             newThing = new Entity(x,y,z,'F','#0ff','Frost Demon',true);
@@ -551,11 +558,13 @@ var EntityMaker = {
             RangeMixin(newThing,1,1,8,'Hypothermia',0.3,'*','#0ff',"casts a ray of frost",20,"You feel cold!");
             //WizardMixin(newThing);
             newThing.tempHate.push('hot');
+            newThing.yellSound="shivers";
             break;
             case 'Gargoyle':
-            newThing = new Entity(x,y,z,'G','#ccc','Goblin',true);
+            newThing = new Entity(x,y,z,'G','#ccc','Gargoyle',true);
             ChaseMixin(newThing,'attacks',3,false,true);
             newThing.burns=false;
+            newThing.yellSound="roars";
             break;
             case 'BronzeGolem':
             newThing = new Entity(x,y,z,'G','#oaf','Bronze Golem',true);
@@ -563,30 +572,35 @@ var EntityMaker = {
             newThing.burns=false;
             HurtByLiquidMixin(newThing,1); // melted by lava
             MeltMixin(newThing,1);
+            newThing.yellSound="creeks towards you";
             break;
             case 'Snake':
-            newThing = new Entity(x,y,z,'S','#0f0','Goblin',true);
+            newThing = new Entity(x,y,z,'S','#0f0','Snake',true);
             ChaseMixin(newThing,'bites',2);
             HurtByLiquidMixin(newThing,1);
             newThing.tempHate.push('cold');
+            newThing.yellSound="hisses";
             break;
             case 'Penguin':
             newThing = new Entity(x,y,z,'p','#fff','Penguin',true);
-            ChaseMixin(newThing,'attacks',2);
+            ChaseMixin(newThing,'pecks',2);
             HurtByLiquidMixin(newThing,1);
             newThing.tempHate.push('hot');
+            newThing.yellSound="quacks";
             break;
             case 'Moose':
             newThing = new Entity(x,y,z,'M','#0af','Moose',true);
             ChaseMixin(newThing,'tramples',3,false,true);
             HurtByLiquidMixin(newThing,1);
             newThing.tempHate.push('hot');
+            newThing.yellSound="bellows";
             break;
             case 'PolarBear':
             newThing = new Entity(x,y,z,'B','#0af','Polar Bear',true);
             ChaseMixin(newThing,'thrashes',4,false,true);
             HurtByLiquidMixin(newThing,1);
             newThing.tempHate.push('hot');
+            newThing.yellSound="growls";
             break;
             case 'FlameDemon':
             newThing = new Entity(x,y,z,'F','#fa0','Flame Demon',true);
@@ -594,6 +608,7 @@ var EntityMaker = {
             HurtByLiquidMixin(newThing,0);
             newThing.immuneToFire=true;
             newThing.onFire=1;
+            newThing.yellSound="roars with flame";
             //newThing.tempHate.push('cold');
             break;
             case 'Snail':
@@ -602,6 +617,7 @@ var EntityMaker = {
             OozeMixin(newThing,'#fff');
             HurtByLiquidMixin(newThing,1);
             newThing.tempHate.push('cold');
+            newThing.yellSound="wags their eyestalks";
             break;
             case 'Creeping Vine':
             newThing = new Entity(x,y,z,'f','#0f0','Creeping Vine',true);

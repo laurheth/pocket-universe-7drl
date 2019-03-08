@@ -28,6 +28,8 @@ var RoomGen = {
                     Statue:2,
                     Candelabra:2,
                 };
+                opts.names1=["Despair","Creeky","Harsh","Torturous","Villainous","Nasty","Bad"];
+                opts.names2=["Dungeon","Oubliette","Cloister","Hall","Ruins"];
                 //opts.floorChars=['.'];
                 break;
             case 'Cold':
@@ -48,6 +50,8 @@ var RoomGen = {
                     Moose:2,
                     PolarBear:1,
                 };
+                opts.names1=["Freezing","Cold","Shivering","Numb","Frozen","Icy","Arctic","Snowy"];
+                opts.names2=["Expanse","Cavern","Land","Deathtrap"];
                 //opts.floorChars=['.'];
                 break;
             case 'Cave':
@@ -66,6 +70,8 @@ var RoomGen = {
                     Dragon:1,
                     Snail:6,
                 };
+                opts.names1=["Dark","Stoney","Deep","Echoey","Slumber","Rocky"];
+                opts.names2=["Cavern","Gulch","Grotto"];
                 //opts.floorChars=['.',];
                 break;
             case 'Hot':
@@ -85,6 +91,8 @@ var RoomGen = {
                     FlameDemon:3,
                     Volcano:1,
                 };
+                opts.names1=["Burning","Hot","Molten","Hellish","Searing","Toasty"];
+                opts.names2=["Cavern","Place","Pit","Furnace","Oven","Broiler"];
                 //opts.floorChars=['.'];
                 break;
             case 'Jungle':
@@ -105,6 +113,8 @@ var RoomGen = {
                 opts.doodads={
                     "Creeping Vine":10,
                 };
+                opts.names1=["Green","Rich","Vibrant","Wooden","Leafy","Humid"];
+                opts.names2=["Forest","Jungle","Wood"];
                 break;
             case 'Swamp':
                 opts.wallColor='#0c3';
@@ -126,6 +136,8 @@ var RoomGen = {
                     Reed:10,
                     "Creeping Vine":1,
                 };
+                opts.names1=["Wet","Balmy","Damp","Bug filled","Smelly","Living"];
+                opts.names2=["Swamp","Fen","Marsh","Wetland"];
                 break;
                 //opts.floorChars=['.',','];
         }
@@ -146,7 +158,7 @@ var RoomGen = {
         console.log(roomBounds);
         console.log(thisRoom+' '+roomSize+' '+k);
         this.wallDirections(newWalls);
-        Game.roomNames.push("Room #"+k);
+        Game.roomNames.push("The "+ROT.RNG.getItem(opts.names1)+" "+ROT.RNG.getItem(opts.names2));
         Game.roomTags[k]=opts.tags;
 
         // Features

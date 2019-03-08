@@ -517,6 +517,10 @@ Player.prototype.act = function () {
         Game.dungeonInfo.innerHTML+=Game.roomNames[this.z];
     }
 
+    if ('Burning' in this.status) {
+        spreadFire(this.getKey());
+    }
+
     // Lava logic
     if (this.getKey() in Game.map && Game.map[this.getKey()].liquidType==1 && Game.map[this.getKey()].water > Game.minWater) {
         //Game.sendMessage("The lava sets you aflame!",false,"",'Burning');
@@ -963,10 +967,10 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
         var checkZ;
         if (which<0) {
             if (this.p1[2]<0) {
-                checkZ=1;
+                checkZ=this.p2[2];
             }
             else {
-                checkZ = 0;
+                checkZ = this.p1[2];
             }
         }
         else {
