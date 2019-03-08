@@ -177,6 +177,15 @@ Entity.prototype.common = function() {
     }
 }
 
+var StairMixin = function(obj) {
+    obj.act = function() {
+
+    };
+    obj.actOn = function(direction) {
+        Game.nextLevel();
+    };
+}
+
 var OozeMixin = function(obj,oozeColor) {
     obj.oozeColor = oozeColor;
     obj.ooze = function() {
@@ -567,7 +576,7 @@ var EntityMaker = {
             newThing.yellSound="roars";
             break;
             case 'BronzeGolem':
-            newThing = new Entity(x,y,z,'G','#oaf','Bronze Golem',true);
+            newThing = new Entity(x,y,z,'G','#0af','Bronze Golem',true);
             ChaseMixin(newThing,'smashes',5,true,true);
             newThing.burns=false;
             HurtByLiquidMixin(newThing,1); // melted by lava
@@ -666,6 +675,12 @@ var EntityMaker = {
             MeltMixin(newThing,0);
             newThing.burns=false;
             newThing.tempHate.push('hot','temperate');
+            break;
+            case 'Staircase':
+            newThing = new Entity(x,y,z,'>','#fff','Staircase',false);
+            newThing.burns=false;
+            newThing.immuneToFire=true;
+            StairMixin(newThing);
             break;
         }
         return newThing;

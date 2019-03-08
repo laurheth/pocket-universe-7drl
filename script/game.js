@@ -23,7 +23,6 @@ var Game = {
     lastMessage: [""],
     roomNames:[],
     roomTags:{},
-    portalList:[],
     level: 1,
 
     init: function () {
@@ -43,6 +42,7 @@ var Game = {
         this.holdPortal = document.getElementById('holdPortal');
         //this.holdPortal.innerHTML = 'Holding portal to: dungeon of despair';
         this.scheduler = new ROT.Scheduler.Simple();
+        this.player = new Player(-1, -1, -1);
 
         this._generateMap();
 
@@ -79,10 +79,23 @@ var Game = {
         //this.scheduler.add(this._addEntity('FrostDemon'),true);
         //this.scheduler.add(this._addEntity('FrostDemon'),true);
         //this.scheduler.add(this._addEntity('Volcano'),true);
-        //this.scheduler.add(this._addEntity('Fountain'),true);
+        this.scheduler.add(this._addEntity('Staircase'),true);
         this.scheduler.add(TileManager,true);
         this.engine = new ROT.Engine(this.scheduler);
         this.engine.start();
+    },
+
+    nextLevel: function() {
+        this.player.heldPortal=null;
+        this.level++;
+        this.roomNames=[];
+        this.roomTags={};
+        this.map={};
+        this.scheduler.clear();
+        this._generateMap();
+        this.scheduler.add(this.player,true);
+        this.scheduler.add(TileManager,true);
+        this.scheduler.add(this._addEntity('Staircase'),true);
     },
 
     burnColor: function() {
@@ -132,7 +145,7 @@ var Game = {
         }
         var numConnections=Math.max(3,parseInt(k/3));
         if (this.walls.length > 0) {
-            for (let k = 0; k < 3; k++) {
+            for (let k = 0; k < numConnections; k++) {
                 for (let i = 0; i < 2; i++) {
                     let index = Math.floor(ROT.RNG.getUniform() * this.walls.length);
                     let key = this.walls.splice(index, 1)[0];
@@ -180,7 +193,9 @@ var Game = {
         let px = parseInt(parts[0]);
         let py = parseInt(parts[1]);
         let pz = parseInt(parts[2]);
-        this.player = new Player(px, py, pz);
+        this.player.x=px;
+        this.player.y=py;
+        this.player.z=pz;
         this.map[key].entity = this.player;
         
 
