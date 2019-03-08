@@ -202,6 +202,8 @@ var Game = {
         //this._addEntity();  
     },
 
+
+
     _addEntity: function(name) {
         let index = Math.floor(ROT.RNG.getUniform() * this.freeCells.length);
         let key = this.freeCells.splice(index, 1)[0];
@@ -344,7 +346,7 @@ function Player (x, y, z) {
     this.burns=true;
     this.status={};//'Burning':10,'Drowning':10,'Freezing':10};
     this.heldPortal=null;
-    this.inventory=[];
+    this.inventory=[ItemBuilder.itemByName('Coffee'),ItemBuilder.itemByName('Icecream'),];
     //this.draw();
 };
 
