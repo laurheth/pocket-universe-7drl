@@ -67,7 +67,7 @@ Entity.prototype.spreadFire = function(key) {
                             }
                         }
                     }
-                    if (Game.map[testKey].entity != null && (Game.map[testKey].entity.burns || 'melt' in Game.map[testKey].entity) && (Game.map[testKey].liquidType != 0 || Game.map[testKey].water<Game.minWater)) {
+                    if (testKey in Game.map && Game.map[testKey].entity != null && (Game.map[testKey].entity.burns || 'melt' in Game.map[testKey].entity) && (Game.map[testKey].liquidType != 0 || Game.map[testKey].water<Game.minWater)) {
                         if ('melt' in Game.map[testKey].entity) {
                             Game.map[testKey].entity.melt();
                         }

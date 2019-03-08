@@ -422,6 +422,9 @@ Player.prototype.dropPortal = function() {
     }
     this.heldPortal.drop(this.x,this.y,this.z);
     this.heldPortal.open=true;
+
+    Animator.shoot(this.x,this.y,this.heldPortal.localPos(this.z)[0],this.heldPortal.localPos(this.z)[1],'*','#00f');
+
     this.heldPortal=null;
     Game.sendMessage("You drop the portal. It attaches itself to the wall and opens!");
     return true;
@@ -668,6 +671,7 @@ Player.prototype.act = function () {
 
     this.printStatus();
     Game._drawVisible();
+    Animator.startAnimation();
     //Game.sendMessage("Something happened!");
     Game.lastMessage=[""];
     Game.currentTurn++;
@@ -675,7 +679,7 @@ Player.prototype.act = function () {
 };
 
 Player.prototype.handleEvent = function (e) {
-    if (!this.alive) {
+    if (!this.alive || Animator.running) {
         return;
     }
     var keyMap = {};
@@ -823,6 +827,14 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
     this.p1=[x1,y1,z1];
     this.p2=[x2,y2,z2];
     this.open=false;
+    this.localPos=function(z) {
+        if (z==this.p1[2]) {
+            return [this.p1[0],this.p1[1]];
+        }
+        else {
+            return [this.p2[0],this.p2[1]];
+        }
+    };
     // corrects entrance to mesh with entrace 1
     this.correctEntrance = function(which,acceptAny=false) {
         var desiredDirection;
