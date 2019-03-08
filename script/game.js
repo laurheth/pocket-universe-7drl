@@ -333,6 +333,8 @@ var Game = {
             case "Hypothermia":
             case "Overheating":
             return 100;
+            case "Poison":
+            return 30;
         }
     }
 };
@@ -346,20 +348,30 @@ function Player (x, y, z) {
     this.burns=true;
     this.status={};//'Burning':10,'Drowning':10,'Freezing':10};
     this.heldPortal=null;
-    this.inventory=[ItemBuilder.itemByName('Coffee'),ItemBuilder.itemByName('Icecream'),];
+    this.wand = null;
+    this.inventory=[ItemBuilder.itemByName('MegaParka'),ItemBuilder.itemByName('Coffee'),ItemBuilder.itemByName('Icecream'),];
+    this.armor=this.inventory[0];
+    this.poisonTurn=-50;
     //this.draw();
 };
 
 
 
 Player.prototype.seriousThreshold = {
-    'Drowning': [5,'Swimming'],
-    'Hypothermia': [20,'Cold'],
-    'Overheating': [20,'Hot'],
+    'Drowning': [5,'Swimming','Drowning'],
+    'Hypothermia': [20,'Cold','Hypothermia'],
+    'Overheating': [20,'Hot','Heat Stroke'],
+    'Poison': [10,'Poisoned','Very Poisoned'],
+    'Bleeding': [3,'Bleeding','Mortally Wounded'],
 };
 
 Player.prototype.wound = function(dmg) {
-    if (dmg == 0) {return;}
+    if (dmg <= 0) {return;}
+    if (this.armor != null) {
+        if ('Bleeding' in this.armor.effects) {
+            dmg = Math.max(1,dmg-this.armor.Bleeding); // armor is damage reduction
+        }
+    }
     if ('Bleeding' in this.status) {
         this.status.Bleeding -= dmg;
     }
@@ -379,9 +391,32 @@ Player.prototype.printStatus = function() {
     // Print new ones
     var stats = Object.keys(this.status);
     for (let i=0;i<stats.length;i++) {
+        if (this.armor != null && stats[i] in this.armor.effects && stats[i] != 'Bleeding') {
+            if (Game.currentTurn % this.armor.effects[stats[i]] == 0) { // lower numbers better for armor effects
+                this.status[stats[i]]++;
+            }
+        }
         this.status[stats[i]]--;
         // Succumb to status effect
         if (this.status[stats[i]]<0) {
+            if (stats[i]=='Bleeding') {
+                Game.statusMessage('You have bled to death.','Bleeding');
+            }
+            else if (stats[i]=='Burning') {
+                Game.statusMessage('You have burned to death.','Burning');
+            }
+            else if (stats[i]=='Hypothermia') {
+                Game.statusMessage('You have frozen to death.','Hypothermia');
+            }
+            else if (stats[i]=='Overheating') {
+                Game.statusMessage('You have succumbed to the heat.','Overheating');
+            }
+            else if (stats[i]=='Drowning') {
+                Game.statusMessage('You have drowned.','Drowning');
+            }
+            else if (stats[i]=='Poison') {
+                Game.statusMessage('You have succumbed to the poison.','Poison');
+            }
             this.status={};
             this.status.Dead='10';
             this.alive=false;
@@ -397,6 +432,9 @@ Player.prototype.printStatus = function() {
             if (this.status[stats[i]] > this.seriousThreshold[stats[i]][0]) {
                 message=this.seriousThreshold[stats[i]][1];
             }
+            else {
+                message=this.seriousThreshold[stats[i]][2];
+            }
         }
         
         newStatus.appendChild(document.createTextNode(message));
@@ -405,13 +443,16 @@ Player.prototype.printStatus = function() {
         Game.statusList.appendChild(newStatus);
     }
     // held portal
+    var portalMsg;
     if (this.heldPortal != null) {
-        var portalMsg="Holding portal to: " + this.heldPortal.name(-1);
-        Game.holdPortal.innerHTML = portalMsg;
+        portalMsg="Holding portal to: " + this.heldPortal.name(-1);
     }
     else {
-        Game.holdPortal.innerHTML="";
+        portalMsg="Not holding any portals.";
     }
+    portalMsg += '<br>Wand: ' + ((this.wand != null) ? (this.wand.name) : ('None'));
+    portalMsg += ', Armor: ' + ((this.armor != null) ? (this.armor.name) : ('None'));
+    Game.holdPortal.innerHTML = portalMsg;
 };
 /*Player.prototype.draw = function () {
     Game.display.draw(Game.offset[0], Game.offset[1], "@", "#fff");
@@ -461,7 +502,7 @@ Player.prototype.dropPortal = function() {
 Player.prototype.getPortal = function() {
     var standPortal = Game.map[this.getKey()].contains; // don't grab a portal you're standing on
     if (standPortal != null) {
-        Game.sendMessage("Can't get a portal while standing in it.");
+        Game.sendMessage("Can't acquire a portal while standing in it.");
         return false;
     }
     var success=false;
@@ -496,7 +537,7 @@ Player.prototype.getPortal = function() {
     
     this.heldPortal=portalToGet;
     
-    Game.sendMessage("Picked up the portal to "+this.heldPortal.name()+".");
+    Game.sendMessage("Acquired the portal to "+this.heldPortal.name()+".");
     return success;
 };
 
@@ -666,6 +707,26 @@ Player.prototype.act = function () {
         }
     }
 
+    // Poison logic
+    if ('Poison' in this.status) {
+        if (this.status.Poison > 35) {
+            delete this.status.Poison;
+        }
+        else {
+            if ((Game.currentTurn-this.poisonTurn) > 30) {
+                this.status.Poison += 6;
+            }
+            else if ((Game.currentTurn-this.poisonTurn) > 20) {
+                this.status.Poison += 3;
+            }
+            else if ((Game.currentTurn-this.poisonTurn) > 10) {
+                if (ROT.RNG.getUniform()>0.8) {
+                    this.status.Poison += 2;
+                }
+            }
+        }
+    }
+
     // BLOOD logic
     if ('Bleeding' in this.status) {
         //console.log(this.status.Bleeding);
@@ -699,6 +760,11 @@ Player.prototype.act = function () {
     Game.currentTurn++;
     window.addEventListener("keydown", this);
 };
+
+Player.prototype.endTurn = function() {
+    window.removeEventListener("keydown", this);
+    Game.engine.unlock();
+}
 
 Player.prototype.handleEvent = function (e) {
     if (!this.alive || Animator.running || ItemManager.open) {
@@ -754,13 +820,32 @@ Player.prototype.handleEvent = function (e) {
                 success=this.openPortal(true);
             break;
 
-            // Get portal
-            case 71:
+            // Acquire portal
+            case 65:
                 success=this.getPortal();
             break;
             // Drop portal
             case 68:
                 success=this.dropPortal();
+            break;
+
+            // get item from the ground
+            case 71:
+                if (this.getKey() in Game.map && Game.map[this.getKey()].contains != null && Game.map[this.getKey()].contains instanceof Item) {
+                    if (this.inventory.length <10) {
+                        Game.sendMessage("Picked up the "+Game.map[this.getKey()].contains.name);
+                        this.inventory.push(Game.map[this.getKey()].contains);
+                        Game.map[this.getKey()].contains=null;
+                        success=true;
+                    }
+                    else {
+                        Game.sendMessage("Your inventory is full!");
+                        success=false;
+                    }
+                }
+                else {
+                    success=false;
+                }
             break;
 
             // Open item manager

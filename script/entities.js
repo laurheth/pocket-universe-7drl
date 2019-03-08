@@ -27,6 +27,7 @@ function Entity (x,y,z,char,color,name, lightPasses=true) {
     this.seen=false;
     this.aquatic=false;
     this.amphibious=false;
+    this.poisonous=false;
     Game.map[x+','+y+','+z].entity=this;
 };
 
@@ -53,13 +54,16 @@ Entity.prototype.act = function() {
     this.common();
 };
 
-spreadFire = function(key) {
+spreadFire = function(key,localOnly=false) {
     let parts = key.split(',');
     px=parseInt(parts[0]);
     py=parseInt(parts[1]);
     pz=parseInt(parts[2]);
     for (let i = -1; i < 2; i++) {
         for (let j = -1; j < 2; j++) {
+            if (localOnly && (i!=0 || j!=0)) {
+                continue;
+            }
             var repeat=false;
             for (let q = 0; q < 2; q++) {
                 var testKey = (px + i) + ',' + (py + j) + ',' + pz;
@@ -184,6 +188,7 @@ var StairMixin = function(obj) {
 
     };
     obj.actOn = function(direction) {
+        Game.sendMessage("You walk down the stairs...");
         Game.nextLevel();
     };
 }
@@ -237,6 +242,7 @@ var RangeMixin = function(obj,accuracy,number,range,effect,frequency,character='
                 else {
                     tx += Math.floor(5*ROT.RNG.getUniform())-2
                     ty += Math.floor(5*ROT.RNG.getUniform())-2
+                    spreadFire(tx+','+ty+','+this.z,true);
                 }
                 Animator.shoot(this.x,this.y,tx,ty,this.rangedetails.char,this.rangedetails.color);
             }
@@ -264,7 +270,7 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
         var breaker = 0;
         if (Game.player.z == this.z) {
             this.targetPos=[Game.player.x,Game.player.y];
-            this.chaseTimer=6;
+            this.chaseTimer=10;
         }
         if (this.chaseTimer<=0) {
             this.targetPos=null;
@@ -448,6 +454,17 @@ Entity.prototype.step = function(dx,dy,justCheck=false,beSafe=false) {
     if (this.violent && newKey in Game.map && Game.map[newKey].entity != null && Game.map[newKey].entity == Game.player) {
         //Game.sendMessage("The "+this.name.toLowerCase()+" attacks you!");
         Game.statusMessage("The "+this.name.toLowerCase()+" "+this.verb+" you!",'Bleeding');
+        if (this.poisonous) {
+            if ('Poison' in Game.player.status) {
+                Game.player.status.Poison -= this.dmg;
+                Game.statusMessage("You become more poisoned!",'Poison');
+            }
+            else {
+                Game.player.status.Poison = Game.startValue('Poison');
+                Game.statusMessage("You are poisoned!",'Poison');
+            }
+            Game.player.poisonTurn = Game.currentTurn;
+        }
         Game.player.wound(this.dmg);
         return newKey;
     }
@@ -533,9 +550,9 @@ Entity.prototype.checkSafe = function(testKey) {
             if (Game.map[testKey].liquidType == this.hurtByLiquidType) {
                 result = 0; // don't step into lava
             }
-        }
-        else if (Game.map[testKey].water > Game.deepThreshold && !this.aquatic && !this.amphibious) {
-            result=0;
+            else if (Game.map[testKey].water > Game.deepThreshold && !this.aquatic && !this.amphibious) {
+                result=0;
+            }
         }
         else if (Game.map[testKey].water < Game.minWater && this.aquatic) {
             result=0;
@@ -599,6 +616,7 @@ var EntityMaker = {
             HurtByLiquidMixin(newThing,1);
             newThing.tempHate.push('cold');
             newThing.yellSound="hisses";
+            newThing.poisonous=true;
             break;
             case 'Salamander':
             newThing = new Entity(x,y,z,'S','#fa0','Salamander',true);

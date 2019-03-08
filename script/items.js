@@ -10,6 +10,7 @@ var ItemManager = {
             Game._drawVisible();
             return; //already open, closed it!
         }
+        this.selected=null;
         this.open=true;
         this._drawScreen();
         window.addEventListener("keypress", this);
@@ -27,10 +28,13 @@ var ItemManager = {
             }
         }
         if (this.selected != null) {
-            this.drawCentredText(2*Game.offset[1]-6,"Press [spacebar] to use the "+this.selected.name);
-            this.drawCentredText(2*Game.offset[1]-4,this.selected.longDescription);
+            this.drawCentredText(2*Game.offset[1]-4,"Press [u] to use the "+this.selected.name+". Press [d] to drop it.");
+            this.drawCentredText(2*Game.offset[1]-6,this.selected.longDescription);
+            this.drawCentredText(2*Game.offset[1]-2,"Press [I] / [shift + i] to cancel.");
         }
-        this.drawCentredText(2*Game.offset[1]-2,"Press [I] / [shift + i] to close.");
+        else {
+            this.drawCentredText(2*Game.offset[1]-2,"Press [I] / [shift + i] to close.");
+        }
     },
     drawCentredText: function(row, toprint) {
         let len=toprint.length;
@@ -41,37 +45,78 @@ var ItemManager = {
         let code = e.charCode;
         let ch=String.fromCharCode(code);
         //var success=false;
-        switch (ch) {
-            default:
-            //console.log(ch);
-            //console.log(this.letters);
-            //console.log(this.letters.indexOf(String(ch)));
-            if (this.letters.indexOf(ch)>=0) {
-                let itemNum=this.letters.indexOf(ch);
-                if (itemNum>=0 && itemNum < Game.player.inventory.length) {
-                    //console.log('got');
-                    this.selected=Game.player.inventory[itemNum];
-                    this.selectedIndex=itemNum;
-                }
-            }
-            break;
-            case ' ':
-                if (this.selected != null) {
-                    if (this.selected.uses <= 1) {
-                        Game.player.inventory.splice(this.selectedIndex,1);
+        console.log(ch);
+        console.log(this.selected);
+        if (this.selected == null) {
+            switch (ch) {
+                default:
+                    if (this.letters.indexOf(ch) >= 0) {
+                        let itemNum = this.letters.indexOf(ch);
+                        if (itemNum >= 0 && itemNum < Game.player.inventory.length) {
+                            this.selected = Game.player.inventory[itemNum];
+                            this.selectedIndex = itemNum;
+                        }
                     }
-                    this.selected.use();
-                    this.selected=null;
-                    this.selectedIndex=-1;
+                    break;
+                case 'I':
+                    this.selected = null;
+                    this.selectedIndex = -1;
                     this.inventoryScreen();
                     return;
-                }
-            break;
-            case 'I':
-                this.selected=null;
-                this.selectedIndex=-1;
-                this.inventoryScreen();
-                return;
+            }
+        }
+        else {
+            switch (ch) {
+                case 'u':
+                case 'U':
+                    if (this.selected.uses <= 1) {
+                        Game.player.inventory.splice(this.selectedIndex, 1);
+                    }
+                    this.selected.use();
+                    this.selected = null;
+                    this.selectedIndex = -1;
+                    this.inventoryScreen();
+                    Game.player.endTurn();
+                    return;
+                case 'd':
+                case 'D':
+                    var success=false;
+                    var breaker=0;
+                    while (!success && breaker < 20) {
+                        for (let i=-breaker;i<=breaker;i++) {
+                            for (let j=-breaker;j<=breaker;j++) {
+                                let testKey=(Game.player.x+i)+','+(Game.player.y+j)+','+Game.player.z;
+                                if (testKey in Game.map && Game.map[testKey].contains == null) {
+                                    Game.map[testKey].contains = this.selected;
+                                    success=true;
+                                    break;
+                                }
+                            }
+                            if (success) {break;}
+                        }
+                        breaker++;
+                    }
+                    if (success) {
+                        Game.player.inventory.splice(this.selectedIndex,1);
+                        this.selectedIndex=-1;
+                        Game.sendMessage('You dropped the '+this.selected.name);
+                        this.selected=null;
+                        this.inventoryScreen();
+                        Game.player.endTurn();
+                        return;
+                    }
+                    else {
+                        Game.sendMessage("There's no where available to drop it!");
+                    }
+                    break;
+                case 'I':
+                    this.selected=null;
+                    this.selectedIndex=-1;
+                    break;
+                default:
+                    this._drawScreen();
+                break;
+            }
         }
         this._drawScreen();
         //this.drawCentredText(2,ch);
@@ -83,26 +128,32 @@ var ItemBuilder = {
         switch(name) {
             default:
             case 'Coffee':
-                return new Item(name,'u','#fff',{Bleeding:2,Hypothermia:50,Burning:3},'Warm, refreshing drink.','A hot cup of coffee! Warms the body, soothes the soul.');
+                return new Item(name,'u','#fff',{Bleeding:2,Hypothermia:50,Burning:3,Overheating:-10},'Warm, refreshing drink.','A hot cup of coffee! Warms the body, soothes the soul.',1,'drink');
             case 'Icecream':
-                return new Item(name,'\u2200','#faf',{Bleeding:2,Overheating:50},'A cold snack.','An ice cream cone! Wow, so refreshing!');
+                return new Item(name,'\u2200','#faf',{Bleeding:2,Overheating:50, Hypothermia:-10},'A cold snack.','An ice cream cone! Wow, so refreshing!',1,'eat');
+            case 'Healing potion':
+                return new Item(name,'+','#0f0',{Bleeding:20,Poison:50},'Heals the body.','A glowing green concoction to make you healthy.',1,'drink');
+            case 'MegaParka':
+                return new Item(name,'[','#ddf',{Bleeding:1,Hypothermia:1},'Protects from the cold.','The biggest parka in history. Wow!',100,'wear','Armor');
         }
     }
 };
 
 var UseMessages = {
-    Bleeding: ["You feel refreshed!"],
-    Hypothermia: ["That warmed you up!"],
-    Burning: ["You put out the fire with the "],
-    Overheating: ["That cooled you down!"],
+    Bleeding: ["You feel refreshed!","Ouch!"],
+    Hypothermia: ["That warmed you up!","You feel colder!"],
+    Burning: ["You put out the fire with the ","You burst in flames from the "],
+    Overheating: ["That cooled you down!","You feel hotter!"],
 }
 
-function Item(name, char, color, effects,shortDescription,longDescription,uses=1) {
+function Item(name, char, color, effects,shortDescription,longDescription,uses=1,verb='use',itemType='consumable') {
     this.name=name;
     this.uses=uses;
     this.char=char;
     this.color=color;
     this.effects=effects;
+    this.verb=verb;
+    this.itemType=itemType;
     this.shortDescription=shortDescription;
     this.longDescription=longDescription;
     this.lightPasses=function() {return true;};
@@ -116,22 +167,58 @@ function Item(name, char, color, effects,shortDescription,longDescription,uses=1
         if (this.uses<0) {
             return;
         }
-        Game.sendMessage("You use the "+this.name+".");
-        let fx = Object.keys(this.effects);
-        for (let i=0;i<fx.length;i++) {
-            if (fx[i] in Game.player.status) {
-                Game.player.status[fx[i]] += this.effects[fx[i]];
-                if (this.effects[fx[i]] > 0) {
-                    if (fx[i]=='Burning') {
-                        delete Game.player.status.Burning;
-                        Game.sendMessage(UseMessages.Burning+this.name+"!");
-                    }
-                    else {
-                        Game.sendMessage(UseMessages[fx[i]]);
-                    }
+        if (this.itemType == 'Armor' || this.itemType == 'Wand') {
+            if (this.itemType=='Armor') {
+                if (Game.player.armor != this) {
+                    Game.player.armor = this;
+                    Game.sendMessage("You put on the "+this.name+".");
+                }
+                else {
+                    Game.sendMessage("You take off the "+this.name+".");
+                    Game.player.armor=null;
+                }
+            }
+            else {
+                if (Game.player.wand != this) {
+                    Game.player.wand = this;
+                    Game.sendMessage("You wield the "+this.name+".");
+                }
+                else {
+                    Game.sendMessage("You unwield the "+this.name+".");
                 }
             }
         }
-        this.uses--;
+        else {
+            Game.sendMessage("You " + this.verb + " the " + this.name + ".");
+            let fx = Object.keys(this.effects);
+            for (let i = 0; i < fx.length; i++) {
+                // Apply effects to player
+                if (fx[i] in Game.player.status) {
+                    var effectIndex = (this.effects[fx[i]] >= 0) ? 0 : 1;
+                    Game.player.status[fx[i]] += this.effects[fx[i]];
+                    if (this.effects[fx[i]] != 0) {
+                        if (fx[i] == 'Burning') {
+                            delete Game.player.status.Burning;
+                            Game.sendMessage(UseMessages.Burning[effectIndex] + this.name + "!");
+                        }
+                        else {
+                            Game.sendMessage(UseMessages[fx[i]][effectIndex]);
+                        }
+                    }
+                }
+                // Special effects
+                if (fx[i] == 'Burning') {
+                    for (let ii = -1; ii < 2; ii++) {
+                        for (let jj = -1; jj < 2; jj++) {
+                            let testKey = (Game.player.x + ii) + ',' + (Game.player.y + jj) + ',' + (Game.player.z);
+                            if (testKey in Game.map && Game.map[testKey].entity != null && 'melt' in Game.map[testKey].entity) {
+                                Game.map[testKey].entity.melt();
+                            }
+                        }
+                    }
+                }
+            }
+            this.uses--;
+        }
     };
 }

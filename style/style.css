@@ -71,6 +71,10 @@ li {
     color: red;
 }
 
+.Poison {
+    color: greenyellow;
+}
+
 .Dead {
     color: red;
     font-weight: bold;
