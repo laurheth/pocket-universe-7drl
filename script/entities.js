@@ -363,6 +363,9 @@ var GrowMixin = function(obj,growChance) {
             };
             success=this.step(tryPos[0],tryPos[1],true);
             if (success) {
+                if (Game.map[success].water>Game.deepThreshold || Game.map[success].lake) {
+                    return;
+                }
                 let parts=success.split(',');
                 let x=parseInt(parts[0]);
                 let y=parseInt(parts[1]);
@@ -600,9 +603,9 @@ var EntityMaker = {
             HurtByLiquidMixin(newThing,1);
             newThing.tempHate.push('cold');
             break;
-            case 'CreepingVine':
+            case 'Creeping Vine':
             newThing = new Entity(x,y,z,'f','#0f0','Creeping Vine',true);
-            GrowMixin(newThing,0.2);
+            GrowMixin(newThing,0.1);
             DestructMixin(newThing,"cut down");
             HurtByLiquidMixin(newThing,1);
             newThing.tempHate.push('cold');

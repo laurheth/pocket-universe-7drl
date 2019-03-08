@@ -75,9 +75,9 @@ var Game = {
         
         this.scheduler.add(this.player, true);
         //this.scheduler.add(this._addEntity('Plant'),true);
-        this.scheduler.add(this._addEntity('FrostDemon'),true);
-        this.scheduler.add(this._addEntity('FrostDemon'),true);
-        this.scheduler.add(this._addEntity('FrostDemon'),true);
+        //this.scheduler.add(this._addEntity('FrostDemon'),true);
+        //this.scheduler.add(this._addEntity('FrostDemon'),true);
+        //this.scheduler.add(this._addEntity('FrostDemon'),true);
         //this.scheduler.add(this._addEntity('Volcano'),true);
         //this.scheduler.add(this._addEntity('Fountain'),true);
         this.scheduler.add(TileManager,true);
@@ -520,20 +520,13 @@ Player.prototype.act = function () {
     // Lava logic
     if (this.getKey() in Game.map && Game.map[this.getKey()].liquidType==1 && Game.map[this.getKey()].water > Game.minWater) {
         //Game.sendMessage("The lava sets you aflame!",false,"",'Burning');
-        if (Game.map[this.getKey()].lake) {
-            Game.statusMessage("You fall into the deep lava.",'Burning');
-            Game.statusMessage("",'Burning');
-            this.status.Burning=-1;
-        }
-        else {
-            if ('Burning' in this.status) {
+        if ('Burning' in this.status) {
                 Game.statusMessage("The lava burns!!",'Burning');
                 this.status.Burning-=3;
-            }
-            else {
+        }
+        else {
                 Game.statusMessage("The lava has set you aflame!",'Burning');
                 this.status.Burning=10;
-            }
         }
     }
 

@@ -17,6 +17,17 @@ var RoomGen = {
                     forcluster:[],
                     liquid: 0,
                 };
+                opts.monsters={
+                    Goblin:10,
+                    Dragon:1,
+                    Gargoyle:2,
+                    BronzeGolem:3,
+                    Snail:6,
+                };
+                opts.doodads={
+                    Statue:2,
+                    Candelabra:2,
+                };
                 //opts.floorChars=['.'];
                 break;
             case 'Cold':
@@ -31,6 +42,12 @@ var RoomGen = {
                     forcluster:['Ice'],
                     liquid: 0,
                 };
+                opts.monsters={
+                    FrostDemon:2,
+                    Penguin:10,
+                    Moose:2,
+                    PolarBear:1,
+                };
                 //opts.floorChars=['.'];
                 break;
             case 'Cave':
@@ -43,6 +60,11 @@ var RoomGen = {
                     entitycluster: 0,
                     forcluster:[],
                     liquid: 0,
+                };
+                opts.monsters={
+                    Goblin:10,
+                    Dragon:1,
+                    Snail:6,
                 };
                 //opts.floorChars=['.',];
                 break;
@@ -58,6 +80,11 @@ var RoomGen = {
                     forcluster:[],
                     liquid: 1,
                 };
+                opts.monsters={
+                    Dragon:1,
+                    FlameDemon:3,
+                    Volcano:1,
+                };
                 //opts.floorChars=['.'];
                 break;
             case 'Jungle':
@@ -67,9 +94,16 @@ var RoomGen = {
                 opts.features={
                     lake:0.1,
                     river: 0.2,
-                    entitycluster: 0,
-                    forcluster:[],
+                    entitycluster: 0.5,
+                    forcluster:['Creeping Vine'],
                     liquid: 0,
+                };
+                opts.monsters={
+                    Snake:10,
+                    Snail:10,
+                };
+                opts.doodads={
+                    "Creeping Vine":10,
                 };
                 break;
             case 'Swamp':
@@ -79,9 +113,18 @@ var RoomGen = {
                 opts.features={
                     lake:0.8,
                     river: 0.1,
-                    entitycluster: 0,
-                    forcluster:[],
+                    entitycluster: 0.5,
+                    forcluster:['Reed'],
                     liquid: 0,
+                };
+                opts.monsters={
+                    Snake:10,
+                    Snail:10,
+                    Fountain:1,
+                };
+                opts.doodads={
+                    Reed:10,
+                    "Creeping Vine":1,
                 };
                 break;
                 //opts.floorChars=['.',','];
@@ -121,8 +164,26 @@ var RoomGen = {
                 this.addEntityCluster(k,roomBounds,ROT.RNG.getItem(opts.features.forcluster));
             }
         }
-        //this.addRiver(k,roomBounds,0);
-        //this.addEntityCluster(k,roomBounds,'Ice');
+
+        // Place entities and stuff!
+        this.placeEntities(k,opts.monsters,roomBounds,0.004);
+        if ('doodads' in opts) {
+            this.placeEntities(k,opts.doodads,roomBounds,0.05);
+        }
+    },
+
+    placeEntities:function(k,list,roomBounds,chance) {
+        for (let i=roomBounds[0];i<roomBounds[2];i++) {
+            for (let j=roomBounds[1];j<roomBounds[3];j++) {
+                let testKey = i+','+j+','+k;
+                if (testKey in Game.map && Game.map[testKey].passThrough() && Game.map[testKey].water<Game.minWater) {
+                    if (chance>ROT.RNG.getUniform()) {
+                        let entityName = ROT.RNG.getWeightedValue(list);
+                        Game.addEntity(entityName,i,j,k);
+                    }
+                }
+            }
+        }
     },
 
     rectRoom:function(k,roomSize,opts,roomBounds) {
