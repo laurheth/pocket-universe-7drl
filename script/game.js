@@ -592,7 +592,7 @@ Player.prototype.getPortal = function() {
                 let testKey = (this.x + i) + ',' + (this.y + j) + ',' + this.z;
                 if (testKey in Game.map && Game.map[testKey].contains != null && Game.map[testKey].contains instanceof Connection && Game.map[testKey].contains != standPortal) {
                     //Game.map[testKey].contains.open = openClose;
-                    if (Game.map[testKey].entity != null) {
+                    if ((Game.map[Game.map[testKey].contains.getKey(0)].entity != null) || (Game.map[Game.map[testKey].contains.getKey(1)].entity != null)) {
                         continue;
                     }
                     portalToGet = Game.map[testKey].contains;
