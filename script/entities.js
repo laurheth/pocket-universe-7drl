@@ -590,17 +590,17 @@ var EntityMaker = {
             break;
             case 'Dragon':
             newThing = new Entity(x,y,z,'D','#0f0','Dragon',true);
-            ChaseMixin(newThing,'attacks',4,false,true);
+            ChaseMixin(newThing,'attacks',6,false,true);
             RangeMixin(newThing,0.2,5,6,'Burning',0.5,'*','#ff0',"breathes fire",1,"You are burning!");
             newThing.yellSound="roars";
             break;
             case 'FrostDemon':
             newThing = new Entity(x,y,z,'F','#0ff','Frost Demon',true);
-            ChaseMixin(newThing,'attacks',1);
+            ChaseMixin(newThing,'attacks',2);
             HurtByLiquidMixin(newThing,1);
             MeltMixin(newThing,0);
             newThing.burns=false;
-            RangeMixin(newThing,1,1,8,'Hypothermia',0.3,'*','#0ff',"casts a ray of frost",20,"You feel cold!");
+            RangeMixin(newThing,1,1,8,'Hypothermia',0.3,'*','#0ff',"casts a ray of frost",30,"You feel cold!");
             //WizardMixin(newThing);
             newThing.tempHate.push('hot');
             newThing.yellSound="shivers";
@@ -644,7 +644,7 @@ var EntityMaker = {
             break;
             case 'Moosetaur':
             newThing = new Entity(x,y,z,'M','#ff0','Moosetaur',true);
-            ChaseMixin(newThing,'tramples',3,false,true);
+            ChaseMixin(newThing,'tramples',4,false,true);
             HurtByLiquidMixin(newThing,1);
             newThing.tempHate.push('hot');
             newThing.yellSound="bellows";
@@ -652,14 +652,14 @@ var EntityMaker = {
             break;
             case 'Moose':
             newThing = new Entity(x,y,z,'M','#fa0','Moose',true);
-            ChaseMixin(newThing,'tramples',3,false,true);
+            ChaseMixin(newThing,'tramples',4,false,true);
             HurtByLiquidMixin(newThing,1);
             newThing.tempHate.push('hot');
             newThing.yellSound="bellows";
             break;
             case 'PolarBear':
             newThing = new Entity(x,y,z,'B','#ddd','Polar Bear',true);
-            ChaseMixin(newThing,'thrashes',4,false,true);
+            ChaseMixin(newThing,'thrashes',5,false,true);
             HurtByLiquidMixin(newThing,1);
             newThing.tempHate.push('hot');
             newThing.yellSound="growls";

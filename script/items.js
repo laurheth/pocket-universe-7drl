@@ -138,10 +138,22 @@ var ItemBuilder = {
                 return new Item(name,'\u2200','#faf',{Bleeding:3,Overheating:50, Hypothermia:-10},'A cold snack.','An ice cream cone! Wow, so refreshing!',1,'eat');
             case 'Healing potion':
                 return new Item(name,'+','#0f0',{Bleeding:20,Poison:50},'Heals the body.','A glowing green concoction to make you healthy.',1,'drink');
-            case 'MegaParka':
-                return new Item(name,'[','#ddf',{Bleeding:1,Hypothermia:1},'Protects from the cold.','The biggest parka in history. Wow!',100,'wear','Armor');
+            case 'Parka':
+                return new Item(name,'[','#ddf',{Bleeding:0,Hypothermia:2},'Protects from the cold.','A big toasty parka. Not much use in a fight though.',100,'wear','Armor');
+            case 'Leather Armor':
+                return new Item(name,'[','#f90',{Bleeding:1,Hypothermia:10},'Light armor.','Basic armor made from hardenned leather.',100,'wear','Armor');
+            case 'Chainmail Armor':
+                return new Item(name,'[','#ddd',{Bleeding:2},'Medium armor.','Armor made from interlocking chain links.',100,'wear','Armor');
+            case 'Plate Armor':
+                return new Item(name,'[','#0dd',{Bleeding:4},'Heavy armor.','Very protective armor. Wow!',100,'wear','Armor');
+            case 'Dragonleather Armor':
+                return new Item(name,'[','#0f0',{Bleeding:4,Burning:3,Overheating:6},'Dragon armor.','Armor made from a dragon. Definitely unethical, but it incredibly protective.',100,'wear','Armor');
             case 'Wand of Reach':
-                return new Item(name,'/','#ff0',{Reach:4,Banish:1},'Extends your portal reach.','Holding this lets you acquire portals from a greater distance.',3,'wield','Wand');
+                return new Item(name,'/','#ff0',{Reach:Math.max(4,Math.floor(ROT.RNG.getUniform()*Game.level))},'Extends your portal reach.','Holding this lets you acquire portals from a greater distance.',100,'wield','Wand');
+            case 'Wand of Retreat':
+                return new Item(name,'/','#f00',{'Retreat':1},'For easy escape.','Zap it to immediately travel through your held portal.',Math.floor(ROT.RNG.getUniform()*(4+Game.level/2))+3,'wield','Wand');
+            case 'Wand of Banishing':
+                return new Item(name,'/','#f0f',{'Banish':1},'Banish foes.','Zap it to banish the targetting entity through your held portal.',Math.floor(ROT.RNG.getUniform()*(3+Game.level/2))+2,'wield','Wand');
         }
     }
 };
