@@ -141,7 +141,7 @@ var ItemBuilder = {
             case 'MegaParka':
                 return new Item(name,'[','#ddf',{Bleeding:1,Hypothermia:1},'Protects from the cold.','The biggest parka in history. Wow!',100,'wear','Armor');
             case 'Wand of Reach':
-                return new Item(name,'/','#ff0',{Reach:4,Retreat:1},'Extends your portal reach.','Holding this lets you acquire portals from a greater distance.',3,'wield','Wand');
+                return new Item(name,'/','#ff0',{Reach:4,Banish:1},'Extends your portal reach.','Holding this lets you acquire portals from a greater distance.',3,'wield','Wand');
         }
     }
 };
@@ -237,20 +237,27 @@ function Item(name, char, color, effects,shortDescription,longDescription,uses=1
                     if (Game.player.heldPortal != null) {
                         if (targKey == null) {
                             targetting.startTarget(this);
-                            return;
+                            return success;
                         } else {
                             if (targKey in Game.map && Game.map[targKey].entity != null && Game.map[targKey].entity != Game.player) {
                                 let newKey = Game.player.heldPortal.sendThrough();
                                 if (newKey != null) {
                                     var moveEntity=Game.map[targKey].entity;
+                                    console.log(moveEntity);
                                     Game.map[targKey].entity=null;
-                                    Game.map[newkey].entity=moveEntity;
+                                    Game.map[newKey].entity=moveEntity;
                                     let parts = targKey.split(',');
                                     if (parseInt(parts[2]) == Game.player.z) {
                                         Animator.dazzle(parseInt(parts[0]), parseInt(parts[1]), '*', ['#00f', '#0ff']);
                                     }
-                                    Game.sendMessage("You banish the "+moveEntity.name+" to "+this.heldPortal.name(-1)+"!");
+                                    Game.sendMessage("You banish the "+moveEntity.name+" to "+Game.player.heldPortal.name(-1)+"!");
+
+                                    let parts2=newKey.split(',');
+                                    moveEntity.x=parseInt(parts2[0]);
+                                    moveEntity.y=parseInt(parts2[1]);
+                                    moveEntity.z=parseInt(parts2[2]);
                                     success=true;
+                                    Game.player.endTurn();
                                 }
                                 else {
                                     Game.sendMessage("The banishment fizzled.");
