@@ -360,23 +360,35 @@ var targetting = {
         this._drawTarget();
         if (code == 13 ) {
             Game.targetMode=false;
-            if (wand != null && 'zap' in wand) {
-                wand.zap(this.getKey());
+            if (this.wand != null && 'zap' in this.wand) {
+                this.wand.zap(this.getKey());
             }
+            Game._drawVisible();
         }
         else if (code == 27 || code == 8) {
             Game.targetMode=false;
+            Game._drawVisible();
         }
     },
     _drawTarget: function() {
         Game._drawVisible();
+        //console.log(Game.player.getKey());
+        //console.log(this.getKey());
         Game.display.draw(tx-Game.player.x+Game.offset[0],ty-Game.player.y+Game.offset[1],'X','#ff0');
         if (this.getKey() in Game.map && Math.abs(Game.map[this.getKey()].lastSeen - Game.currentTurn)<1) {
             if (Game.map[this.getKey()].entity != null) {
-                Game.display.drawText(0,2*offset[y]-1,"> "+ Game.map[this.getKey()].entity.name);
+                Game.display.drawText(2,2*Game.offset[1]-2,"> "+ Game.map[this.getKey()].entity.name);
             }
-            else if (Game.map[this.getKey()].contains != null && Game.map[this.getKey()].contains instanceof Item) {
-                Game.display.drawText(0,2*offset[y]-1,"> "+ Game.map[this.getKey()].contains.name);
+            else if (Game.map[this.getKey()].contains != null) {
+                if (Game.map[this.getKey()].contains instanceof Item) {
+                    Game.display.drawText(2,2*Game.offset[1]-2,"> "+ Game.map[this.getKey()].contains.name);
+                }
+                else {
+                    Game.display.drawText(2,2*Game.offset[1]-2,"> Portal");
+                }
+            }
+            else {
+                Game.display.drawText(2,2*Game.offset[1]-2,"> "+ Game.map[this.getKey()].getName());
             }
         }
     },
@@ -391,6 +403,7 @@ function Player (x, y, z) {
     this.x = x;
     this.y = y;
     this.z = z;
+    this.name = "Lauren";
     this.hurtByLiquidType=-1;
     this.alive=true;
     this.burns=true;
@@ -636,7 +649,7 @@ Player.prototype.openPortal = function(openClose) {
 Player.prototype.act = function () {
     Game.engine.lock();
     //console.log(this.getKey());
-    Game.playerName.innerHTML="Lauren";
+    Game.playerName.innerHTML=this.name;
     Game.dungeonInfo.innerHTML="Dungeon Level "+Game.level+"<br>";//+Game.roomNames[this.z];
     if (this.z>=0 && this.z < Game.roomNames.length) {
         Game.dungeonInfo.innerHTML+=Game.roomNames[this.z];
@@ -870,7 +883,7 @@ Player.prototype.handleEvent = function (e) {
     /*if (!(code in keyMap)) {
         return;
     }*/
-    if (targetMode) {
+    if (Game.targetMode) {
         var dir=[0,0];
         if (code in keyMap) {
             dir=ROT.DIRS[8][keyMap[code]];
@@ -936,6 +949,11 @@ Player.prototype.handleEvent = function (e) {
                 if (this.wand != null && 'zap' in this.wand) {
                     success=this.wand.zap();
                 }
+            break;
+
+            // Examine
+            case 88:
+                targetting.startTarget(null);
             break;
         }
         if (success) {
@@ -1511,5 +1529,26 @@ function Tile(char,color,passable,seethrough,contains,direction,water=0,liquidTy
         else {
             return this.contains.getColor();
         }
+    }
+    this.getName = function() {
+        if ('name' in this) {
+            return this.name;
+        }
+        let liquidNames = ['Water','Lava'];
+        if (this.liquidType >= 0) {
+            if (this.water > Game.deepThreshold) {
+                return 'Deep '+liquidNames[this.liquidType];
+            }
+            else if (this.water > Game.minWater) {
+                return 'Shallow '+liquidNames[this.liquidType];
+            }
+        }
+        if (this.char=='.') {
+            return 'Stone Floor';
+        }
+        if (this.char=='#') {
+            return 'Stone Wall';
+        }
+        return 'Nothing';
     }
 };

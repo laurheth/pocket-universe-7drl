@@ -444,6 +444,7 @@ var MeltMixin = function (obj, liquidType) {
         else {
             Game.map[this.getKey()].char='~';
             Game.map[this.getKey()].color=this.color;
+            Game.map[this.getKey()].name='Molten '+this.name;
         }
         Game.map[this.getKey()].entity=null;
         this.active=false;
