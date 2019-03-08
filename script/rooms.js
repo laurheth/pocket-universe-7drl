@@ -229,7 +229,7 @@ var RoomGen = {
         var toReturn=0.0;
         var normalize=parseFloat(1+peak-level)/10.0;
         if (Game.level < level) {
-            return (parseFloat(Game.level)/level)/normalize;
+            toReturn = (parseFloat(Game.level)/level)/normalize;
         }
         else {
             var toReturn;
@@ -237,8 +237,9 @@ var RoomGen = {
             if (Game.level>peak) {
                 toReturn /= Math.abs(1+Game.level-peak);
             }
-            return toReturn;
+            //return toReturn;
         }
+        return Math.round(10*toReturn);
     },
 
     placeEntities:function(k,list,roomBounds,chance) {
