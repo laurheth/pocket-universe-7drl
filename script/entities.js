@@ -179,6 +179,54 @@ var OozeMixin = function(obj,oozeColor) {
         }
     }
 }
+//RangeMixin(newThing,0.2,5,5,'Burning');
+var RangeMixin = function(obj,accuracy,number,range,effect,frequency,character='*',colour=Game.burnColor(),message="breathes fire",damage=1,hitmessage="Ouch!") {
+    obj.rangedetails = {
+        acc:accuracy,
+        num:number,
+        rng:range,
+        eff:effect,
+        freq:frequency,
+        char:character,
+        color:colour,
+        msg:message,
+        dmg:damage,
+        hitmsg:hitmessage,
+    }
+    obj.zap = function() {
+        var success=false;
+        var playerDist = Math.abs(this.x - Game.player.x) + Math.abs(this.y - Game.player.y);
+        if (this.z != Game.player.z) {
+            return false;
+        }
+        if (Math.abs(Game.map[this.getKey()].lastSeen-Game.currentTurn)>1) {
+            return false;
+        } 
+        if (playerDist < this.rangedetails.rng && ROT.RNG.getUniform()<this.rangedetails.freq) {
+            Game.sendMessage("The "+this.name.toLowerCase()+" "+this.rangedetails.msg+"!");
+            success=true;
+            for (let i=0;i<this.rangedetails.num;i++) {
+                var tx=Game.player.x;
+                var ty=Game.player.y;
+                if (ROT.RNG.getUniform()<this.rangedetails.acc) {
+                    if (effect in Game.player.status) {
+                        Game.player.status[effect]-=this.rangedetails.dmg;
+                    }
+                    else {
+                        Game.statusMessage(this.rangedetails.hitmsg,effect);
+                        Game.player.status[effect]=Game.startValue(effect)-this.rangedetails.dmg;
+                    }
+                }
+                else {
+                    tx += Math.floor(5*ROT.RNG.getUniform())-2
+                    ty += Math.floor(5*ROT.RNG.getUniform())-2
+                }
+                Animator.shoot(this.x,this.y,tx,ty,this.rangedetails.char,this.rangedetails.color);
+            }
+        }
+        return success;
+    }
+}
 
 var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
     obj.dmg=dmg;
@@ -206,6 +254,12 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
         }
         else {
             this.chaseTimer--;
+        }
+
+        if ('zap' in this) {
+            if (this.zap()) {
+                return;
+            }
         }
         
         if (this.targetPos != null) {
@@ -261,7 +315,10 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
 };
 
 var PushMixin = function(obj) {
-
+    obj.actOn = function(direction) {
+        Game.sendMessage("You push the "+this.name.toLowerCase()+".");
+        this.step(direction[0], direction[1]);
+    }
 };
 
 var WaterMixin = function(obj,targWater,liquidType) {
@@ -476,6 +533,21 @@ var EntityMaker = {
             ChaseMixin(newThing,'attacks',2);
             HurtByLiquidMixin(newThing,1);
             newThing.tempHate.push('cold');
+            break;
+            case 'Dragon':
+            newThing = new Entity(x,y,z,'D','#0f0','Dragon',true);
+            ChaseMixin(newThing,'attacks',4,false,true);
+            RangeMixin(newThing,0.2,5,6,'Burning',0.5,'*','#ff0',"breathes fire",1,"You are burning!");
+            break;
+            case 'FrostDemon':
+            newThing = new Entity(x,y,z,'F','#0ff','Frost Demon',true);
+            ChaseMixin(newThing,'attacks',1);
+            HurtByLiquidMixin(newThing,1);
+            MeltMixin(newThing,0);
+            newThing.burns=false;
+            RangeMixin(newThing,1,1,8,'Hypothermia',0.3,'*','#0ff',"casts a ray of frost",20,"You feel cold!");
+            //WizardMixin(newThing);
+            newThing.tempHate.push('hot');
             break;
             case 'Gargoyle':
             newThing = new Entity(x,y,z,'G','#ccc','Goblin',true);

@@ -30,14 +30,16 @@ var Animator={
     runAnimation() {
         Animator.running=true;
         if (Animator.anims.length>0) {
-            let done = Animator.anims[0].anim(Animator.anims[0].t);
-            Animator.anims[0].t++;
-            if (done) {
-                if (Animator.anims.length>1) {
-                    Animator.anims.shift();
-                }
-                else {
-                    Animator.anims=[];
+            for (let i=Animator.anims.length-1;i>=0;i--) {
+                let done = Animator.anims[i].anim(Animator.anims[i].t);
+                Animator.anims[i].t++;
+                if (done) {
+                    if (Animator.anims.length>1) {
+                        Animator.anims.splice(i,1);
+                    }
+                    else {
+                        Animator.anims=[];
+                    }
                 }
             }
         }

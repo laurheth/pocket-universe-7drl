@@ -75,9 +75,9 @@ var Game = {
         
         this.scheduler.add(this.player, true);
         //this.scheduler.add(this._addEntity('Plant'),true);
-        this.scheduler.add(this._addEntity('FlameDemon'),true);
-        this.scheduler.add(this._addEntity('FlameDemon'),true);
-        this.scheduler.add(this._addEntity('FlameDemon'),true);
+        this.scheduler.add(this._addEntity('FrostDemon'),true);
+        this.scheduler.add(this._addEntity('FrostDemon'),true);
+        this.scheduler.add(this._addEntity('FrostDemon'),true);
         //this.scheduler.add(this._addEntity('Volcano'),true);
         //this.scheduler.add(this._addEntity('Fountain'),true);
         this.scheduler.add(TileManager,true);
@@ -309,7 +309,15 @@ var Game = {
     statusMessage: function(message,status) {
         this.sendMessage(message,false,"",status,true);
     },
-
+    startValue: function(effect) {
+        switch(effect) {
+            default:
+            return 10;
+            case "Hypothermia":
+            case "Overheating":
+            return 100;
+        }
+    }
 };
 
 function Player (x, y, z) {
@@ -323,6 +331,8 @@ function Player (x, y, z) {
     this.heldPortal=null;
     //this.draw();
 };
+
+
 
 Player.prototype.seriousThreshold = {
     'Drowning': [5,'Swimming'],
@@ -557,7 +567,7 @@ Player.prototype.act = function () {
     }
     else {
         if ('Hypothermia' in this.status) {
-            if (this.status.Hypothermia < 70) {
+            if (this.status.Hypothermia < 100) {
                 this.status.Hypothermia += 6;
             }
             else {
@@ -593,7 +603,7 @@ Player.prototype.act = function () {
     }
     else {
         if ('Overheating' in this.status) {
-            if (this.status.Overheating < 70) {
+            if (this.status.Overheating < 100) {
                 this.status.Overheating += 6;
             }
             else {
