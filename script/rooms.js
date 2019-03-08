@@ -181,9 +181,9 @@ var RoomGen = {
         //var biomeList=['Dungeon','Cold','Cave','Hot','Jungle','Swamp'];
         var biomeList = {
             Dungeon: 10,
-            Cold: Math.min(10,5+Game.level),
+            Cold: Math.min(10,4+Game.level),
             Cave: 10,
-            Hot: Math.min(10,5+Game.level),
+            Hot: Math.min(10,4+Game.level),
             Jungle: 10,
             Swamp: 10,
             WizardLand: Math.min(10,Game.level/2),

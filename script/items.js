@@ -2,7 +2,7 @@ var ItemManager = {
     open:false,
     selected:null,
     selectedIndex:-1,
-    letters:['a','b','c','d','e','f','g','h','i','j'],
+    letters:["a","b","c","d","e","f","g","h","i","j"],
     inventoryScreen: function() {
         if (this.open) {
             this.open=false;
@@ -27,8 +27,8 @@ var ItemManager = {
             }
         }
         if (this.selected != null) {
-            this.drawCentredText(2*Game.offset[1]-5,"Press [spacebar] to use the "+this.selected.name);
-            this.drawCentredText(2*Game.offset[1]-4,this.selected.description);
+            this.drawCentredText(2*Game.offset[1]-6,"Press [spacebar] to use the "+this.selected.name);
+            this.drawCentredText(2*Game.offset[1]-4,this.selected.longDescription);
         }
         this.drawCentredText(2*Game.offset[1]-2,"Press [I] / [shift + i] to close.");
     },
@@ -43,9 +43,13 @@ var ItemManager = {
         //var success=false;
         switch (ch) {
             default:
+            //console.log(ch);
+            //console.log(this.letters);
+            //console.log(this.letters.indexOf(String(ch)));
             if (this.letters.indexOf(ch)>=0) {
                 let itemNum=this.letters.indexOf(ch);
                 if (itemNum>=0 && itemNum < Game.player.inventory.length) {
+                    //console.log('got');
                     this.selected=Game.player.inventory[itemNum];
                     this.selectedIndex=itemNum;
                 }
@@ -69,6 +73,7 @@ var ItemManager = {
                 this.inventoryScreen();
                 return;
         }
+        this._drawScreen();
         //this.drawCentredText(2,ch);
     },
 };
