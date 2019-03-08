@@ -24,6 +24,7 @@ var Game = {
     roomNames:[],
     roomTags:{},
     level: 1,
+    targetMode: false,
 
     init: function () {
         let screen = document.getElementById('screen');
@@ -339,6 +340,53 @@ var Game = {
     }
 };
 
+// Targetting stuff, doubles for looking?
+var targetting = {
+    tx:0,
+    ty:0,
+    tz:0,
+    wand:null,
+    startTarget: function(wand) {
+        this.wand=wand;
+        tx=Game.player.x;
+        ty=Game.player.y;
+        tz=Game.player.z;
+        Game.targetMode=true;
+        this._drawTarget();
+    },
+    targetHandler: function(code,dir) {
+        tx+=dir[0];
+        ty+=dir[1];
+        this._drawTarget();
+        if (code == 13 ) {
+            Game.targetMode=false;
+            if (wand != null && 'zap' in wand) {
+                wand.zap(this.getKey());
+            }
+        }
+        else if (code == 27 || code == 8) {
+            Game.targetMode=false;
+        }
+    },
+    _drawTarget: function() {
+        Game._drawVisible();
+        Game.display.draw(tx-Game.player.x+Game.offset[0],ty-Game.player.y+Game.offset[1],'X','#ff0');
+        if (this.getKey() in Game.map && Math.abs(Game.map[this.getKey()].lastSeen - Game.currentTurn)<1) {
+            if (Game.map[this.getKey()].entity != null) {
+                Game.display.drawText(0,2*offset[y]-1,"> "+ Game.map[this.getKey()].entity.name);
+            }
+            else if (Game.map[this.getKey()].contains != null && Game.map[this.getKey()].contains instanceof Item) {
+                Game.display.drawText(0,2*offset[y]-1,"> "+ Game.map[this.getKey()].contains.name);
+            }
+        }
+    },
+    getKey: function() {
+        return tx+','+ty+','+tz;
+    }
+}
+
+// Player stuff
+
 function Player (x, y, z) {
     this.x = x;
     this.y = y;
@@ -348,9 +396,9 @@ function Player (x, y, z) {
     this.burns=true;
     this.status={};//'Burning':10,'Drowning':10,'Freezing':10};
     this.heldPortal=null;
-    this.wand = null;
-    this.inventory=[ItemBuilder.itemByName('MegaParka'),ItemBuilder.itemByName('Coffee'),ItemBuilder.itemByName('Icecream'),];
+    this.inventory=[ItemBuilder.itemByName('MegaParka'),ItemBuilder.itemByName('Wand of Reach'),ItemBuilder.itemByName('Coffee'),ItemBuilder.itemByName('Icecream'),];
     this.armor=this.inventory[0];
+    this.wand = this.inventory[1];
     this.poisonTurn=-50;
     //this.draw();
 };
@@ -369,7 +417,7 @@ Player.prototype.wound = function(dmg) {
     if (dmg <= 0) {return;}
     if (this.armor != null) {
         if ('Bleeding' in this.armor.effects) {
-            dmg = Math.max(1,dmg-this.armor.Bleeding); // armor is damage reduction
+            dmg = Math.max(1,dmg-this.armor.effects.Bleeding); // armor is damage reduction
         }
     }
     if ('Bleeding' in this.status) {
@@ -484,7 +532,7 @@ Player.prototype.getKey = function() {
     return this.x+','+this.y+','+this.z;
 };
 
-Player.prototype.dropPortal = function() {
+Player.prototype.dropPortal = function(anim=true,openafter=true) {
     if (this.heldPortal == null) {
         Game.sendMessage("No portal to drop. Pick one up first.");
         return false;
@@ -492,10 +540,19 @@ Player.prototype.dropPortal = function() {
     this.heldPortal.drop(this.x,this.y,this.z);
     this.heldPortal.open=true;
 
-    Animator.shoot(this.x,this.y,this.heldPortal.localPos(this.z)[0],this.heldPortal.localPos(this.z)[1],'*','#00f');
+    if (anim) {
+        Animator.shoot(this.x,this.y,this.heldPortal.localPos(this.z)[0],this.heldPortal.localPos(this.z)[1],'*','#00f');
+    }
+
+    
+    if (openafter) {
+        Game.sendMessage("You drop the portal. It attaches itself to the wall and opens!");
+    }
+    else {
+        this.heldPortal.open=false;
+    }
 
     this.heldPortal=null;
-    Game.sendMessage("You drop the portal. It attaches itself to the wall and opens!");
     return true;
 };
 
@@ -507,23 +564,35 @@ Player.prototype.getPortal = function() {
     }
     var success=false;
     var portalToGet=null;
-    for (let i=-1;i<2;i++) {
-        for (let j=-1;j<2;j++) {
-            let testKey = (this.x+i)+','+(this.y+j)+','+this.z;
-            if (testKey in Game.map && Game.map[testKey].contains != null && Game.map[testKey].contains instanceof Connection && Game.map[testKey].contains != standPortal) {
-                //Game.map[testKey].contains.open = openClose;
-                if (Game.map[testKey].entity != null) {
+    var reachRadius=1;
+    if (this.wand != null && 'Reach' in this.wand.effects) {
+        reachRadius = this.wand.effects.Reach;
+    }
+    var breaker=0;
+    while (!success && breaker < reachRadius) {
+        breaker++;
+        for (let i = -breaker; i <= breaker; i++) {
+            for (let j = -breaker; j <= breaker; j++) {
+                if (Math.abs(j)+Math.abs(i) > Math.max(2,breaker)) {
                     continue;
                 }
-                portalToGet=Game.map[testKey].contains;
-                portalToGet.grabFrom(testKey);
-                Game.map[testKey].contains=null;
-                success=true;
+                let testKey = (this.x + i) + ',' + (this.y + j) + ',' + this.z;
+                if (testKey in Game.map && Game.map[testKey].contains != null && Game.map[testKey].contains instanceof Connection && Game.map[testKey].contains != standPortal) {
+                    //Game.map[testKey].contains.open = openClose;
+                    if (Game.map[testKey].entity != null) {
+                        continue;
+                    }
+                    portalToGet = Game.map[testKey].contains;
+                    Animator.shoot(portalToGet.localPos(this.z)[0],portalToGet.localPos(this.z)[1],this.x,this.y,'*','#00f');
+                    portalToGet.grabFrom(testKey);
+                    Game.map[testKey].contains = null;
+                    success = true;
+                    break;
+                }
+            }
+            if (success) {
                 break;
             }
-        }
-        if (success) {
-            break;
         }
     }
     if (!success) {
@@ -770,6 +839,7 @@ Player.prototype.handleEvent = function (e) {
     if (!this.alive || Animator.running || ItemManager.open) {
         return;
     }
+
     var keyMap = {};
     keyMap[38] = 0;
     keyMap[75] =0;
@@ -800,6 +870,14 @@ Player.prototype.handleEvent = function (e) {
     /*if (!(code in keyMap)) {
         return;
     }*/
+    if (targetMode) {
+        var dir=[0,0];
+        if (code in keyMap) {
+            dir=ROT.DIRS[8][keyMap[code]];
+        }
+        targetting.targetHandler(code,dir);
+        return;
+    }
 
     if (!(code in keyMap)) {
         var success = false;
@@ -851,6 +929,13 @@ Player.prototype.handleEvent = function (e) {
             // Open item manager
             case 73:
                 ItemManager.inventoryScreen();
+            break;
+
+            // Zap wand, if possible
+            case 90:
+                if (this.wand != null && 'zap' in this.wand) {
+                    success=this.wand.zap();
+                }
             break;
         }
         if (success) {
@@ -1067,6 +1152,36 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
             this.p2[2]=-1;
         }
     };
+
+    this.sendThrough = function() {
+        var sendToZ;
+        if (this.p1[2]<0) {
+            sendToZ = this.p2[2];
+        }
+        else {
+            sendToZ = this.p1[2];
+        }
+        if (sendToZ<0) {
+            return null;
+        }
+        var newKey=null;
+        var breaker=0;
+    
+        while (breaker < 100 && !newKey) {
+            breaker++;
+            for (let i=-breaker;i<=breaker;i++) {
+                for (let j=-breaker;j<=breaker;j++) {
+                    let testKey = i+','+j+','+sendToZ;
+                    if (testKey in Game.map && Game.map[testKey].entity==null && Game.map[testKey].passThrough()) {
+                        newKey=testKey;
+                        break;
+                    }
+                }
+                if (newKey != null) {break;}
+            }
+        }
+        return newKey;
+    }
 
     this.name = function(which=-1) {
         var checkZ;

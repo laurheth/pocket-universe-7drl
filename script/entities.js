@@ -217,7 +217,7 @@ var RangeMixin = function(obj,accuracy,number,range,effect,frequency,character='
     }
     obj.zap = function() {
         var success=false;
-        var playerDist = Math.abs(this.x - Game.player.x) + Math.abs(this.y - Game.player.y);
+        var playerDist = Math.max(Math.abs(this.x - Game.player.x),Math.abs(this.y - Game.player.y)) + 0.5*Math.min(Math.abs(this.x - Game.player.x),Math.abs(this.y - Game.player.y));
         if (this.z != Game.player.z) {
             return false;
         }
@@ -435,8 +435,16 @@ var HurtByLiquidMixin = function(obj,liquidType) {
 var MeltMixin = function (obj, liquidType) {
     obj.meltInto = liquidType;
     obj.melt = function () {
-        Game.map[this.getKey()].water=2*Game.minWater;
-        Game.map[this.getKey()].nextWater = Game.map[this.getKey()].water;
+        if (this.meltInto >=0) {
+            Game.map[this.getKey()].water=2*Game.minWater;
+            Game.map[this.getKey()].nextWater = Game.map[this.getKey()].water;
+            Game.map[this.getKey()].liquidType=this.meltInto;
+            Game.map[this.getKey()].nextLiquidType=this.meltInto;
+        }
+        else {
+            Game.map[this.getKey()].char='~';
+            Game.map[this.getKey()].color=this.color;
+        }
         Game.map[this.getKey()].entity=null;
         this.active=false;
         Game.sendMessage("The "+this.name.toLowerCase()+" melted.",true,this.getKey());
@@ -550,7 +558,7 @@ Entity.prototype.checkSafe = function(testKey) {
             if (Game.map[testKey].liquidType == this.hurtByLiquidType) {
                 result = 0; // don't step into lava
             }
-            else if (Game.map[testKey].water > Game.deepThreshold && !this.aquatic && !this.amphibious) {
+            else if ((Game.map[testKey].water > Game.deepThreshold || Game.map[testKey].lake) && !this.aquatic && !this.amphibious) {
                 result=0;
             }
         }
@@ -711,6 +719,7 @@ var EntityMaker = {
             //DestructMixin(newThing,"knock over");
             PushMixin(newThing);
             HurtByLiquidMixin(newThing,1);
+            MeltMixin(newThing,-1);
             newThing.burns=false;
             break;
             case 'Ice':

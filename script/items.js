@@ -23,12 +23,17 @@ var ItemManager = {
         }
         else {
             //let letters=['a','b','c','d','e','f','g','h','i','j'];
+            
             for (let i=0;i<Game.player.inventory.length;i++) {
-                Game.display.drawText(2,2+i,this.letters[i]+" - "+Game.player.inventory[i].infoString());
+                var infostring=this.letters[i]+" - "+Game.player.inventory[i].infoString();
+                if (Game.player.inventory[i] == Game.player.wand || Game.player.inventory[i] == Game.player.armor) {
+                    infostring+=" *";
+                }
+                Game.display.drawText(2,2+i,infostring);
             }
         }
         if (this.selected != null) {
-            this.drawCentredText(2*Game.offset[1]-4,"Press [u] to use the "+this.selected.name+". Press [d] to drop it.");
+            this.drawCentredText(2*Game.offset[1]-4,"Press [u] to use/equip the "+this.selected.name+". Press [d] to drop it.");
             this.drawCentredText(2*Game.offset[1]-6,this.selected.longDescription);
             this.drawCentredText(2*Game.offset[1]-2,"Press [I] / [shift + i] to cancel.");
         }
@@ -45,8 +50,8 @@ var ItemManager = {
         let code = e.charCode;
         let ch=String.fromCharCode(code);
         //var success=false;
-        console.log(ch);
-        console.log(this.selected);
+        //console.log(ch);
+        //console.log(this.selected);
         if (this.selected == null) {
             switch (ch) {
                 default:
@@ -130,11 +135,13 @@ var ItemBuilder = {
             case 'Coffee':
                 return new Item(name,'u','#fff',{Bleeding:2,Hypothermia:50,Burning:3,Overheating:-10},'Warm, refreshing drink.','A hot cup of coffee! Warms the body, soothes the soul.',1,'drink');
             case 'Icecream':
-                return new Item(name,'\u2200','#faf',{Bleeding:2,Overheating:50, Hypothermia:-10},'A cold snack.','An ice cream cone! Wow, so refreshing!',1,'eat');
+                return new Item(name,'\u2200','#faf',{Bleeding:3,Overheating:50, Hypothermia:-10},'A cold snack.','An ice cream cone! Wow, so refreshing!',1,'eat');
             case 'Healing potion':
                 return new Item(name,'+','#0f0',{Bleeding:20,Poison:50},'Heals the body.','A glowing green concoction to make you healthy.',1,'drink');
             case 'MegaParka':
                 return new Item(name,'[','#ddf',{Bleeding:1,Hypothermia:1},'Protects from the cold.','The biggest parka in history. Wow!',100,'wear','Armor');
+            case 'Wand of Reach':
+                return new Item(name,'/','#ff0',{Reach:4,Retreat:1},'Extends your portal reach.','Holding this lets you acquire portals from a greater distance.',3,'wield','Wand');
         }
     }
 };
@@ -185,6 +192,7 @@ function Item(name, char, color, effects,shortDescription,longDescription,uses=1
                 }
                 else {
                     Game.sendMessage("You unwield the "+this.name+".");
+                    Game.player.wand=null;
                 }
             }
         }
@@ -221,4 +229,76 @@ function Item(name, char, color, effects,shortDescription,longDescription,uses=1
             this.uses--;
         }
     };
+    if ('Banish' in this.effects || 'Retreat' in this.effects) {
+        this.zap = function (targKey=null) {
+            var success = false;
+            if (this.uses > 0) {
+                if ('Banish' in this.effects) {
+                    if (Game.player.heldPortal != null) {
+                        if (targKey == null) {
+                            targetting.startTarget(this);
+                            return;
+                        } else {
+                            if (targKey in Game.map && Game.map[targKey].entity != null && Game.map[targKey].entity != Game.player) {
+                                let newKey = Game.player.heldPortal.sendThrough();
+                                if (newKey != null) {
+                                    var moveEntity=Game.map[targKey].entity;
+                                    Game.map[targKey].entity=null;
+                                    Game.map[newkey].entity=moveEntity;
+                                    let parts = targKey.split(',');
+                                    if (parseInt(parts[2]) == Game.player.z) {
+                                        Animator.dazzle(parseInt(parts[0]), parseInt(parts[1]), '*', ['#00f', '#0ff']);
+                                    }
+                                    Game.sendMessage("You banish the "+moveEntity.name+" to "+this.heldPortal.name(-1)+"!");
+                                    success=true;
+                                }
+                                else {
+                                    Game.sendMessage("The banishment fizzled.");
+                                }
+                            }
+                            else {
+                                Game.sendMessage("Not a valid target.");
+                            }
+                        }
+                    }
+                    else {
+                        Game.sendMessage("Must be holding a portal to banish entities to!");
+                    }
+                }
+                else if ('Retreat' in this.effects && Game.player.heldPortal != null) {
+                    let thePortal = Game.player.heldPortal;
+                    let newKey = Game.player.heldPortal.sendThrough();
+                    if (newKey != null) {
+                        let parts = newKey.split(',');
+                        Game.player.dropPortal(false,false);
+                        Game.map[Game.player.getKey()].entity=null;
+                        Game.player.x = parseInt(parts[0]);
+                        Game.player.y = parseInt(parts[1]);
+                        Game.player.z = parseInt(parts[2]);
+                        console.log(newKey);
+                        Game.map[newKey].entity = Game.player;
+                        Animator.dazzle(Game.player.x,Game.player.y,'*',['#00f','#0ff']);
+                        //Animator.shoot(thePortal.localPos(Game.player.z)[0],thePortal.localPos(Game.player.z)[1],Game.player.x,Game.player.y,'*','#00f')
+                        Animator.dazzle(thePortal.localPos(Game.player.z)[0],thePortal.localPos(Game.player.z)[1],'*',['#00f','#0ff']);
+                        success=true;
+                        Game.sendMessage("The "+this.name+" evacuates you into "+Game.roomNames[Game.player.z]+"!");
+                    }
+                }
+                if (success) {
+                    this.uses--;
+                }
+            }
+            else {
+                for (let i = 0; i < Game.player.inventory.length; i++) {
+                    if (Game.player.inventory[i] == this) {
+                        Game.player.inventory.splice(i, 1);
+                    }
+                }
+                Game.player.wand = null;
+                Game.sendMessage("The "+this.name+" burns into ashes.");
+                success=true;
+            }
+            return success;
+        };
+    }
 }
