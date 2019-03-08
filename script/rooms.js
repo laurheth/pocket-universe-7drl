@@ -18,11 +18,11 @@ var RoomGen = {
                     liquid: 0,
                 };
                 opts.monsters={
-                    Goblin:10*this.chanceCurve(1,1),
+                    Goblin:this.chanceCurve(1,1),
                     Dragon:this.chanceCurve(10,20),
                     Gargoyle:this.chanceCurve(3,10),
                     BronzeGolem:this.chanceCurve(6,18),
-                    Snail:6*this.chanceCurve(1,3),
+                    Snail:this.chanceCurve(1,3),
                 };
                 opts.doodads={
                     Statue:2,
@@ -45,9 +45,10 @@ var RoomGen = {
                 };
                 opts.monsters={
                     Goblin:this.chanceCurve(1,1),
-                    Dragon:this.chanceCurve(10,20),
+                    Dragon:this.chanceCurve(12,20),
                     Gargoyle:this.chanceCurve(3,10),
                     BronzeGolem:this.chanceCurve(6,18),
+                    Moosetaur:this.chanceCurve(8,18),
                     FrostDemon:this.chanceCurve(4,12),
                     FlameDemon:this.chanceCurve(4,12),
                     Salamander:this.chanceCurve(1,8),
@@ -74,8 +75,9 @@ var RoomGen = {
                 };
                 opts.monsters={
                     FrostDemon:this.chanceCurve(4,12),
-                    Penguin:10*this.chanceCurve(1,1),
+                    Penguin:2*this.chanceCurve(1,1),
                     Moose:this.chanceCurve(3,10),
+                    Moosetaur:this.chanceCurve(8,18),
                     PolarBear:this.chanceCurve(6,18),
                 };
                 opts.names1=["Freezing","Cold","Shivering","Numb","Frozen","Icy","Arctic","Snowy"];
@@ -94,9 +96,9 @@ var RoomGen = {
                     liquid: 0,
                 };
                 opts.monsters={
-                    Goblin:10*this.chanceCurve(1,1),
+                    Goblin:this.chanceCurve(1,1),
                     Dragon:this.chanceCurve(10,20),
-                    Snail:6*this.chanceCurve(1,3),
+                    Snail:this.chanceCurve(1,3),
                 };
                 opts.names1=["Dark","Stoney","Deep","Echoey","Slumber","Rocky"];
                 opts.names2=["Cavern","Gulch","Grotto"];
@@ -116,9 +118,9 @@ var RoomGen = {
                 };
                 opts.monsters={
                     Salamander:this.chanceCurve(1,8),
-                    Dragon:5*this.chanceCurve(8,18),
+                    Dragon:this.chanceCurve(8,18),
                     FlameDemon:this.chanceCurve(4,12),
-                    Volcano:this.chanceCurve(8,18),
+                    Volcano:this.chanceCurve(8,18)/10.0,
                 };
                 opts.names1=["Burning","Hot","Molten","Hellish","Searing","Toasty"];
                 opts.names2=["Cavern","Place","Pit","Furnace","Oven","Broiler"];
@@ -157,9 +159,9 @@ var RoomGen = {
                     liquid: 0,
                 };
                 opts.monsters={
-                    Snake:10*this.chanceCurve(1,1),
-                    Snail:10*this.chanceCurve(1,3),
-                    Fountain:0.1*this.chanceCurve(1,3),
+                    Snake:this.chanceCurve(1,1),
+                    Snail:this.chanceCurve(1,3),
+                    Fountain:this.chanceCurve(1,3)/10.0,
                 };
                 opts.doodads={
                     Reed:10,
@@ -225,14 +227,15 @@ var RoomGen = {
 
     chanceCurve:function(level,peak) {
         var toReturn=0.0;
+        var normalize=parseFloat(1+peak-level)/10.0;
         if (Game.level < level) {
-            return Math.pow(parseFloat(Game.level)/level,2);
+            return (parseFloat(Game.level)/level)/normalize;
         }
         else {
             var toReturn;
-            toReturn = parseFloat(1+Game.level-level);
+            toReturn = Math.min(parseFloat(1+Game.level-level)/normalize,10);
             if (Game.level>peak) {
-                toReturn /= Math.pow(Math.abs(peak-Game.level),3);
+                toReturn /= Math.abs(1+Game.level-peak);
             }
             return toReturn;
         }

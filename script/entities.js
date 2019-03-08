@@ -25,6 +25,8 @@ function Entity (x,y,z,char,color,name, lightPasses=true) {
     this.hurtByLiquidType=-1;
     this.yellSound="shouts";
     this.seen=false;
+    this.aquatic=false;
+    this.amphibious=false;
     Game.map[x+','+y+','+z].entity=this;
 };
 
@@ -527,8 +529,16 @@ Entity.prototype.checkSafe = function(testKey) {
     //let testKey=x+','+y+','+z;
     var result=1; // determine probability of taking the risk
     if (testKey in Game.map) {
-        if (Game.map[testKey].water > Game.minWater && Game.map[testKey].liquidType == this.hurtByLiquidType) {
-            result = 0; // don't step into lava
+        if (Game.map[testKey].water > Game.minWater) {
+            if (Game.map[testKey].liquidType == this.hurtByLiquidType) {
+                result = 0; // don't step into lava
+            }
+        }
+        else if (Game.map[testKey].water > Game.deepThreshold && !this.aquatic && !this.amphibious) {
+            result=0;
+        }
+        else if (Game.map[testKey].water < Game.minWater && this.aquatic) {
+            result=0;
         }
         if (this.z in Game.roomTags && this.tempHate.length>0) {
             for (let i=0;i<this.tempHate.length;i++) {
@@ -605,15 +615,23 @@ var EntityMaker = {
             newThing.tempHate.push('hot');
             newThing.yellSound="quacks";
             break;
+            case 'Moosetaur':
+            newThing = new Entity(x,y,z,'M','#ff0','Moosetaur',true);
+            ChaseMixin(newThing,'tramples',3,false,true);
+            HurtByLiquidMixin(newThing,1);
+            newThing.tempHate.push('hot');
+            newThing.yellSound="bellows";
+            RangeMixin(newThing,0.95,1,12,'Bleeding',0.3,',','#ff0',"fires an arrow",2,"You are bleeding!");
+            break;
             case 'Moose':
-            newThing = new Entity(x,y,z,'M','#0af','Moose',true);
+            newThing = new Entity(x,y,z,'M','#fa0','Moose',true);
             ChaseMixin(newThing,'tramples',3,false,true);
             HurtByLiquidMixin(newThing,1);
             newThing.tempHate.push('hot');
             newThing.yellSound="bellows";
             break;
             case 'PolarBear':
-            newThing = new Entity(x,y,z,'B','#0af','Polar Bear',true);
+            newThing = new Entity(x,y,z,'B','#ddd','Polar Bear',true);
             ChaseMixin(newThing,'thrashes',4,false,true);
             HurtByLiquidMixin(newThing,1);
             newThing.tempHate.push('hot');
@@ -685,7 +703,7 @@ var EntityMaker = {
             newThing.tempHate.push('hot','temperate');
             break;
             case 'Staircase':
-            newThing = new Entity(x,y,z,'>','#fff','Staircase',false);
+            newThing = new Entity(x,y,z,'>','#fff','Staircase',true);
             newThing.burns=false;
             newThing.immuneToFire=true;
             StairMixin(newThing);

@@ -502,9 +502,6 @@ Player.prototype.openPortal = function(openClose) {
     var success=false;
     for (let i=-1;i<2;i++) {
         for (let j=-1;j<2;j++) {
-            // force orthogonal directions
-            if (i!=0 && j!=0) {continue;}
-            if (i==0 && j==0) {continue;}
             let testKey=(this.x+i)+','+(this.y+j)+','+this.z;
             if (testKey in Game.map && Game.map[testKey].contains != null && Game.map[testKey].contains instanceof Connection && Game.map[testKey].contains.open != openClose) {
                 Game.map[testKey].contains.open = openClose;
