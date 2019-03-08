@@ -590,6 +590,14 @@ var EntityMaker = {
             newThing.tempHate.push('cold');
             newThing.yellSound="hisses";
             break;
+            case 'Salamander':
+            newThing = new Entity(x,y,z,'S','#fa0','Salamander',true);
+            ChaseMixin(newThing,'bites',2);
+            HurtByLiquidMixin(newThing,1);
+            newThing.tempHate.push('cold');
+            newThing.yellSound="hisses";
+            newThing.immuneToFire=true;
+            break;
             case 'Penguin':
             newThing = new Entity(x,y,z,'p','#fff','Penguin',true);
             ChaseMixin(newThing,'pecks',2);

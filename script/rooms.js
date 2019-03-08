@@ -18,11 +18,11 @@ var RoomGen = {
                     liquid: 0,
                 };
                 opts.monsters={
-                    Goblin:10,
-                    Dragon:1,
-                    Gargoyle:2,
-                    BronzeGolem:3,
-                    Snail:6,
+                    Goblin:10*this.chanceCurve(1,1),
+                    Dragon:this.chanceCurve(10,20),
+                    Gargoyle:this.chanceCurve(3,10),
+                    BronzeGolem:this.chanceCurve(6,18),
+                    Snail:6*this.chanceCurve(1,3),
                 };
                 opts.doodads={
                     Statue:2,
@@ -30,6 +30,34 @@ var RoomGen = {
                 };
                 opts.names1=["Despair","Creeky","Harsh","Torturous","Villainous","Nasty","Bad"];
                 opts.names2=["Dungeon","Oubliette","Cloister","Hall","Ruins"];
+                //opts.floorChars=['.'];
+                break;
+            case 'WizardLand':
+                opts.wallColor='#d0f';
+                opts.floorColor='#96a';
+                opts.roomOpts=['rectRoom','tRoom','hallRoom','roundRoom'];
+                opts.features={
+                    lake:0.1,
+                    river: 0,
+                    entitycluster: 0,
+                    forcluster:[],
+                    liquid: 1,
+                };
+                opts.monsters={
+                    Goblin:this.chanceCurve(1,1),
+                    Dragon:this.chanceCurve(10,20),
+                    Gargoyle:this.chanceCurve(3,10),
+                    BronzeGolem:this.chanceCurve(6,18),
+                    FrostDemon:this.chanceCurve(4,12),
+                    FlameDemon:this.chanceCurve(4,12),
+                    Salamander:this.chanceCurve(1,8),
+                };
+                opts.doodads={
+                    Statue:2,
+                    Candelabra:2,
+                };
+                opts.names1=["Mystic","Cursed","Bewitched","Glowing","Runed","Immortal"];
+                opts.names2=["Cloister","Tower","Laboratory","Manse","Hall","Study"];
                 //opts.floorChars=['.'];
                 break;
             case 'Cold':
@@ -45,10 +73,10 @@ var RoomGen = {
                     liquid: 0,
                 };
                 opts.monsters={
-                    FrostDemon:2,
-                    Penguin:10,
-                    Moose:2,
-                    PolarBear:1,
+                    FrostDemon:this.chanceCurve(4,12),
+                    Penguin:10*this.chanceCurve(1,1),
+                    Moose:this.chanceCurve(3,10),
+                    PolarBear:this.chanceCurve(6,18),
                 };
                 opts.names1=["Freezing","Cold","Shivering","Numb","Frozen","Icy","Arctic","Snowy"];
                 opts.names2=["Expanse","Cavern","Land","Deathtrap"];
@@ -66,9 +94,9 @@ var RoomGen = {
                     liquid: 0,
                 };
                 opts.monsters={
-                    Goblin:10,
-                    Dragon:1,
-                    Snail:6,
+                    Goblin:10*this.chanceCurve(1,1),
+                    Dragon:this.chanceCurve(10,20),
+                    Snail:6*this.chanceCurve(1,3),
                 };
                 opts.names1=["Dark","Stoney","Deep","Echoey","Slumber","Rocky"];
                 opts.names2=["Cavern","Gulch","Grotto"];
@@ -87,9 +115,10 @@ var RoomGen = {
                     liquid: 1,
                 };
                 opts.monsters={
-                    Dragon:1,
-                    FlameDemon:3,
-                    Volcano:1,
+                    Salamander:this.chanceCurve(1,8),
+                    Dragon:5*this.chanceCurve(8,18),
+                    FlameDemon:this.chanceCurve(4,12),
+                    Volcano:this.chanceCurve(8,18),
                 };
                 opts.names1=["Burning","Hot","Molten","Hellish","Searing","Toasty"];
                 opts.names2=["Cavern","Place","Pit","Furnace","Oven","Broiler"];
@@ -128,9 +157,9 @@ var RoomGen = {
                     liquid: 0,
                 };
                 opts.monsters={
-                    Snake:10,
-                    Snail:10,
-                    Fountain:1,
+                    Snake:10*this.chanceCurve(1,1),
+                    Snail:10*this.chanceCurve(1,3),
+                    Fountain:0.1*this.chanceCurve(1,3),
                 };
                 opts.doodads={
                     Reed:10,
@@ -147,16 +176,26 @@ var RoomGen = {
     generateRoom:function(k,roomSize) {
         //console.log()
         //this.rectRoom(k,roomSize);
-        var biomeList=['Dungeon','Cold','Cave','Hot','Jungle','Swamp'];
-        var opts=this.biomeOpts(ROT.RNG.getItem(biomeList));
+        //var biomeList=['Dungeon','Cold','Cave','Hot','Jungle','Swamp'];
+        var biomeList = {
+            Dungeon: 10,
+            Cold: Math.min(10,5+Game.level),
+            Cave: 10,
+            Hot: Math.min(10,5+Game.level),
+            Jungle: 10,
+            Swamp: 10,
+            WizardLand: Math.min(10,Game.level/2),
+        }
+        var opts=this.biomeOpts(ROT.RNG.getWeightedValue(biomeList));
+        console.log(opts.monsters);
         var roomBounds=[0,0,0,0];
         //console.log(opts);
         //var roomOpts = ['rectRoom','roundRoom','tRoom','caveRoom','hallRoom'];
         let thisRoom = ROT.RNG.getItem(opts.roomOpts);
-        console.log(roomBounds);
+        //console.log(roomBounds);
         newWalls=this[thisRoom](k,roomSize,opts,roomBounds);
-        console.log(roomBounds);
-        console.log(thisRoom+' '+roomSize+' '+k);
+        //console.log(roomBounds);
+        //console.log(thisRoom+' '+roomSize+' '+k);
         this.wallDirections(newWalls);
         Game.roomNames.push("The "+ROT.RNG.getItem(opts.names1)+" "+ROT.RNG.getItem(opts.names2));
         Game.roomTags[k]=opts.tags;
@@ -181,6 +220,21 @@ var RoomGen = {
         this.placeEntities(k,opts.monsters,roomBounds,0.004);
         if ('doodads' in opts) {
             this.placeEntities(k,opts.doodads,roomBounds,0.05);
+        }
+    },
+
+    chanceCurve:function(level,peak) {
+        var toReturn=0.0;
+        if (Game.level < level) {
+            return Math.pow(parseFloat(Game.level)/level,2);
+        }
+        else {
+            var toReturn;
+            toReturn = parseFloat(1+Game.level-level);
+            if (Game.level>peak) {
+                toReturn /= Math.pow(Math.abs(peak-Game.level),3);
+            }
+            return toReturn;
         }
     },
 

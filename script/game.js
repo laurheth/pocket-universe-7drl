@@ -498,7 +498,7 @@ Player.prototype.getPortal = function() {
 };
 
 Player.prototype.openPortal = function(openClose) {
-    console.log(openClose);
+    //console.log(openClose);
     var success=false;
     for (let i=-1;i<2;i++) {
         for (let j=-1;j<2;j++) {
@@ -525,7 +525,7 @@ Player.prototype.openPortal = function(openClose) {
 
 Player.prototype.act = function () {
     Game.engine.lock();
-    console.log(this.getKey());
+    //console.log(this.getKey());
     Game.playerName.innerHTML="Lauren";
     Game.dungeonInfo.innerHTML="Dungeon Level "+Game.level+"<br>";//+Game.roomNames[this.z];
     if (this.z>=0 && this.z < Game.roomNames.length) {
@@ -668,7 +668,7 @@ Player.prototype.act = function () {
 
     // BLOOD logic
     if ('Bleeding' in this.status) {
-        console.log(this.status.Bleeding);
+        //console.log(this.status.Bleeding);
         if (this.status.Bleeding > 10) {
             delete this.status.Bleeding;
         }
@@ -932,7 +932,7 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
             breaker++;
         }
         if (!success) {return false;}
-        console.log(newKey +' '+pother);
+        //console.log(newKey +' '+pother);
         if (!which) {
             this.p2=pother;
             if (!(this.getKey(1) in Game.map)) {
