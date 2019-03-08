@@ -409,9 +409,9 @@ function Player (x, y, z) {
     this.burns=true;
     this.status={};//'Burning':10,'Drowning':10,'Freezing':10};
     this.heldPortal=null;
-    this.inventory=[ItemBuilder.itemByName('Parka'),ItemBuilder.itemByName('Wand of Reach'),ItemBuilder.itemByName('Coffee'),ItemBuilder.itemByName('Icecream'),];
-    this.armor=this.inventory[0];
-    this.wand = this.inventory[1];
+    this.inventory=[];//[ItemBuilder.itemByName('Parka'),ItemBuilder.itemByName('Wand of Reach'),ItemBuilder.itemByName('Coffee'),ItemBuilder.itemByName('Icecream'),];
+    this.armor=null;//this.inventory[0];
+    this.wand = null;//this.inventory[1];
     this.poisonTurn=-50;
     //this.draw();
 };
@@ -1536,7 +1536,7 @@ function Tile(char,color,passable,seethrough,contains,direction,water=0,liquidTy
         }
         let liquidNames = ['Water','Lava'];
         if (this.liquidType >= 0) {
-            if (this.water > Game.deepThreshold) {
+            if (this.water > Game.deepThreshold || this.lake) {
                 return 'Deep '+liquidNames[this.liquidType];
             }
             else if (this.water > Game.minWater) {

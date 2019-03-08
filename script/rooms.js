@@ -4,6 +4,20 @@ var RoomGen = {
     biomeOpts:function(biome) {
         var opts={};
         opts.tags=['temperate'];
+        
+        opts.items={
+            'Coffee':this.chanceCurve(1,1),
+            'Icecream':this.chanceCurve(1,1),
+            'Healing Potion':this.chanceCurve(1,6),
+            'Parka':this.chanceCurve(2,5),
+            'Leather Armor':this.chanceCurve(1,8),
+            'Chainmail Armor':this.chanceCurve(4,15),
+            'Plate Armor':this.chanceCurve(12,22),
+            'Dragonleather Armor':this.chanceCurve(18,26),
+            'Wand of Reach':this.chanceCurve(2,12),
+            'Wand of Retreat':this.chanceCurve(3,20),
+            'Wand of Banishing':this.chanceCurve(4,26),
+        };
         switch (biome) {
             default:
             case 'Dungeon':
@@ -56,6 +70,12 @@ var RoomGen = {
                 opts.doodads={
                     Statue:2,
                     Candelabra:2,
+                };
+                opts.items={
+                    'Healing Potion':this.chanceCurve(1,1),
+                    'Wand of Reach':this.chanceCurve(2,12),
+                    'Wand of Retreat':this.chanceCurve(3,20),
+                    'Wand of Banishing':this.chanceCurve(4,26),
                 };
                 opts.names1=["Mystic","Cursed","Bewitched","Glowing","Runed","Immortal"];
                 opts.names2=["Cloister","Tower","Laboratory","Manse","Hall","Study"];
@@ -189,7 +209,7 @@ var RoomGen = {
             WizardLand: Math.min(10,Game.level/2),
         }
         var opts=this.biomeOpts(ROT.RNG.getWeightedValue(biomeList));
-        console.log(opts.monsters);
+        //console.log(opts.monsters);
         var roomBounds=[0,0,0,0];
         //console.log(opts);
         //var roomOpts = ['rectRoom','roundRoom','tRoom','caveRoom','hallRoom'];
@@ -219,9 +239,14 @@ var RoomGen = {
         }
 
         // Place entities and stuff!
-        this.placeEntities(k,opts.monsters,roomBounds,0.004);
+        var roomCells=[];
+        roomCells = this.placeEntities(k,opts.monsters,roomBounds,0.004);
         if ('doodads' in opts) {
-            this.placeEntities(k,opts.doodads,roomBounds,0.05);
+            roomCells = this.placeEntities(k,opts.doodads,roomBounds,0.05);
+        }
+        //console.log(opts.items);
+        if (ROT.RNG.getUniform()<Math.min(0.5,(0.1 * k))) {
+            this.placeItem(roomCells,opts.items);
         }
     },
 
@@ -243,6 +268,7 @@ var RoomGen = {
     },
 
     placeEntities:function(k,list,roomBounds,chance) {
+        var roomCells=[];
         for (let i=roomBounds[0];i<roomBounds[2];i++) {
             for (let j=roomBounds[1];j<roomBounds[3];j++) {
                 let testKey = i+','+j+','+k;
@@ -251,8 +277,19 @@ var RoomGen = {
                         let entityName = ROT.RNG.getWeightedValue(list);
                         Game.addEntity(entityName,i,j,k);
                     }
+                    else {
+                        roomCells.push(testKey);
+                    }
                 }
             }
+        }
+        return roomCells;
+    },
+
+    placeItem: function(roomCells,list) {
+        let index = Math.floor(ROT.RNG.getUniform()*roomCells.length);
+        if (Game.map[roomCells[index]].contains==null) {
+            Game.map[roomCells[index]].contains = ItemBuilder.itemByName(ROT.RNG.getWeightedValue(list));
         }
     },
 
