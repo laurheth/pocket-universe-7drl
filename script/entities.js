@@ -29,6 +29,7 @@ function Entity (x,y,z,char,color,name, lightPasses=true) {
     this.amphibious=false;
     this.poisonous=false;
     this.spawnTurn=Game.currentTurn;
+    this.relentless=false;
     Game.map[x+','+y+','+z].entity=this;
 };
 
@@ -119,6 +120,11 @@ Entity.prototype.common = function() {
     if (this.hateCounter>0) {this.hateCounter--;}
 
     if (this.hateCounter > 10) {
+        if ('escape' in this) {
+            this.escape();
+            this.hateCounter -= 2;
+            return;
+        }
         if (ROT.RNG.getUniform()>0.8) {
             Game.map[this.getKey()].entity = null;
             this.active = false;
@@ -144,7 +150,7 @@ Entity.prototype.common = function() {
         }
     }
 
-    if (Game.map[this.getKey()].water > Game.minWater) {
+    if (Game.map[this.getKey()].water >= Game.minWater) {
         if ('hurtByLiquid' in this) {
             this.hurtByLiquid(Game.map[this.getKey()].liquidType);
         }
@@ -195,6 +201,58 @@ var StairMixin = function(obj) {
     };
 }
 
+var FakeChestMixin = function(obj) {
+    obj.act = function() {
+
+    };
+    obj.actOn = function(direction) {
+        Game.sendMessage("You open the Golden Chest...");
+        Game.sendMessage("It was a decoy!");
+        Game.map[this.getKey()].entity=null;
+        Game.map[this.getKey()].contains = ItemBuilder.itemByName('Coffee');
+        this.active=false;
+    }
+}
+
+var VictoryChestMixin = function(obj) {
+    obj.act = function() {
+
+    };
+    obj.actOn = function(direction) {
+        Game.sendMessage("You open the Golden Chest...");
+        Game.sendMessage("You have found the Wand of Nerual!",false,"",'Victory');
+        Game.sendMessage("A stairway out of this hellish place has opened. Escape alive with the wand!",false,"",'Victory');
+        Game.map[this.getKey()].entity=null;
+        Game.map[this.getKey()].contains = ItemBuilder.itemByName('Wand of Nerual');
+        this.active=false;
+        Game.scheduler.add(Game.addImportant('WinStaircase'),true);
+    }
+}
+
+var WinGameMixin = function(obj) {
+    obj.won=false;
+    obj.act = function() {
+        if (this.won) {
+            Game.engine.lock();
+            Game.sendMessage("You escaped with the Wand of Nerual! You have won!!",false,"",'Victory');
+            Game.sendMessage("Thank you for playing!",false,"","Victory");
+        }
+    };
+    obj.actOn = function(direction) {
+        if (Game.player.inventory.length>0) {
+            for (let i=0;i<Game.player.inventory.length;i++) {
+                if (Game.player.inventory[i].name == 'Wand of Nerual') {
+                    this.won=true;
+                    return true;
+                }
+            }
+        }
+        Game.sendMessage("You can't leave without the Wand of Nerual, or this will have all been for nothing!");
+        return false;
+        //Game.engine.lock();
+    }
+}
+
 var OozeMixin = function(obj,oozeColor) {
     obj.oozeColor = oozeColor;
     obj.ooze = function() {
@@ -204,6 +262,139 @@ var OozeMixin = function(obj,oozeColor) {
         }
     }
 }
+
+var LiquidOozeMixin = function(obj,liquid) {
+    obj.liquidOoze = liquid;
+    obj.ooze = function () {
+        if (this.getKey() in Game.map) {
+            if (Game.map[this.getKey()].water < Game.minWater) {
+                Game.map[this.getKey()].water += Game.minWater;
+                Game.map[this.getKey()].liquidType=this.liquidOoze;
+                Game.map[this.getKey()].nextWater += Game.minWater+1;
+                Game.map[this.getKey()].nextLiquidType=this.liquidOoze;
+            }
+        }
+    }
+}
+
+var ShamblerMixin = function(obj) {
+    // Teleport to where the player is
+    obj.nextJump=100;
+    obj.relentless=true;
+    obj.zap = function () {
+        if (this.nextJump <= 0) {
+            this.nextJump = Math.floor(101*ROT.RNG.getUniform())+50;
+            if (this.z != Game.player.z && this.seen) {
+                let newKey = Game.sendToZ(Game.player.z);
+                if (newKey != null && newKey in Game.map && Game.map[newKey].entity == null) {
+                    Game.map[newKey].entity = this;
+                    Game.map[this.getKey()].entity = null;
+                    let parts = newKey.split(',');
+                    this.x = parseInt(parts[0]);
+                    this.y = parseInt(parts[1]);
+                    this.z = parseInt(parts[2]);
+                    Game.sendMessage("The " + this.name.toLowerCase() + " teleports in!", true, newKey);
+                    if (this.z == Game.player.z) {
+                        Animator.dazzle(this.x, this.y, '*', ['#f0f', '#00f']);
+                    }
+                }
+            }
+        }
+    }
+}
+
+var WizardMixin = function(obj) {
+    RangeMixin(obj,1,1,10,'Bleeding',0.5);
+    obj.isWizard=true;
+    obj.minDist=4;
+    obj.home=obj.z;
+    obj.chooseSpell = function() {
+        let spellChoice = Math.floor(4*ROT.RNG.getUniform());
+        switch (spellChoice) {
+            default:
+            // Magic missile
+            case 0:
+                this.rangedetails= {
+                    acc:0.9,
+                    num:1,
+                    rng:10,
+                    eff:'Bleeding',
+                    freq:0.5,
+                    char:'*',
+                    color:'#fff',
+                    msg:'shoots a magic missile!',
+                    dmg:2,
+                    hitmsg:"You're hit!",
+                }
+            break;
+            // Fire
+            case 1:
+                this.rangedetails= {
+                    acc:0.2,
+                    num:5,
+                    rng:5,
+                    eff:'Burning',
+                    freq:0.5,
+                    char:'*',
+                    color:'#fa0',
+                    msg:'unleases a cone of flame!',
+                    dmg:1,
+                    hitmsg:"You catch on fire!",
+                }
+            break;
+            // Poison
+            case 2:
+                this.rangedetails= {
+                    acc:0.9,
+                    num:1,
+                    rng:10,
+                    eff:'Poison',
+                    freq:0.5,
+                    char:'*',
+                    color:'#0f0',
+                    msg:'fires a bolt of poison!',
+                    dmg:2,
+                    hitmsg:"You are poisoned!",
+                }
+            break;
+            // Frost
+            case 2:
+                this.rangedetails= {
+                    acc:0.9,
+                    num:1,
+                    rng:10,
+                    eff:'Hypothermia',
+                    freq:0.5,
+                    char:'*',
+                    color:'#0ff',
+                    msg:'fires a ray of frost!',
+                    dmg:20,
+                    hitmsg:"You feel cold!",
+                }
+            break;
+        }
+    }
+    obj.escape = function () {
+        let newKey = Game.sendToZ(this.home);
+        if (newKey != null && newKey in Game.map && Game.map[newKey].entity==null) {
+            Game.map[newKey].entity=this;
+            Game.map[this.getKey()].entity=null;
+            let parts = newKey.split(',');
+            if (this.z == Game.player.z) {
+                Game.sendMessage("The "+this.name.toLowerCase()+" teleported away!",true,this.getKey());
+                Animator.dazzle(this.x,this.y,'*',['#f0f','#00f']);
+            }
+            this.x=parseInt(parts[0]);
+            this.y=parseInt(parts[1]);
+            this.z=parseInt(parts[2]);
+            Game.sendMessage("The "+this.name.toLowerCase()+" appears!",true,newKey);
+            if (this.z == Game.player.z) {
+                Animator.dazzle(this.x,this.y,'*',['#f0f','#00f']);
+            }
+        }
+    }
+}
+
 //RangeMixin(newThing,0.2,5,5,'Burning');
 var RangeMixin = function(obj,accuracy,number,range,effect,frequency,character='*',colour=Game.burnColor(),message="breathes fire",damage=1,hitmessage="Ouch!") {
     obj.rangedetails = {
@@ -234,12 +425,18 @@ var RangeMixin = function(obj,accuracy,number,range,effect,frequency,character='
                 var tx=Game.player.x;
                 var ty=Game.player.y;
                 if (ROT.RNG.getUniform()<this.rangedetails.acc) {
-                    if (effect in Game.player.status) {
-                        Game.player.status[effect]-=this.rangedetails.dmg;
+                    if (this.rangedetails.eff != 'Bleeding') {
+                        if (this.rangedetails.eff in Game.player.status) {
+                            Game.player.status[this.rangedetails.eff] -= this.rangedetails.dmg;
+                        }
+                        else {
+                            Game.statusMessage(this.rangedetails.hitmsg, this.rangedetails.eff);
+                            Game.player.status[this.rangedetails.eff] = Game.startValue(this.rangedetails.eff) - this.rangedetails.dmg;
+                        }
                     }
                     else {
-                        Game.statusMessage(this.rangedetails.hitmsg,effect);
-                        Game.player.status[effect]=Game.startValue(effect)-this.rangedetails.dmg;
+                        Game.statusMessage(this.rangedetails.hitmsg, this.rangedetails.eff);
+                        Game.player.wound(this.rangedetails.dmg);
                     }
                 }
                 else {
@@ -278,16 +475,21 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
             this.targetPos=[Game.player.x,Game.player.y];
             this.chaseTimer=10;
         }
-        if (this.chaseTimer<=0) {
+        if (this.chaseTimer<=0 && !this.relentless) {
             this.targetPos=null;
         }
         else {
             this.chaseTimer--;
         }
 
-        if ('zap' in this) {
-            if (this.zap()) {
-                return;
+        if (this.onFire < 0 || !this.immuneToFire) {
+            if ('zap' in this) {
+                if ('chooseSpell' in this) {
+                    this.chooseSpell();
+                }
+                if (this.zap()) {
+                    return;
+                }
             }
         }
         
@@ -343,13 +545,19 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
     };
 };
 
-var PushMixin = function(obj) {
+var PushMixin = function(obj,failMessage=null) {
+    obj.failMessage=failMessage;
     obj.actOn = function(direction) {
         if (this.step(direction[0], direction[1]) != null) {
             Game.sendMessage("You push the "+this.name.toLowerCase()+".");
         }
         else {
-            Game.sendMessage("You try to push the "+this.name.toLowerCase()+". It falls apart!");
+            if (this.failMessage==null) {
+                Game.sendMessage("You try to push the "+this.name.toLowerCase()+". It falls apart!");
+            }
+            else {
+                Game.sendMessage(this.failMessage);
+            }
             Game.map[this.getKey()].entity=null;
             this.active=false;
             Game.map[this.getKey()].color=this.color;
@@ -570,7 +778,7 @@ Entity.prototype.checkSafe = function(testKey) {
     //let testKey=x+','+y+','+z;
     var result=1; // determine probability of taking the risk
     if (testKey in Game.map) {
-        if (Game.map[testKey].water > Game.minWater) {
+        if (Game.map[testKey].water >= Game.minWater) {
             if (Game.map[testKey].liquidType == this.hurtByLiquidType) {
                 result = 0; // don't step into lava
             }
@@ -610,6 +818,7 @@ var EntityMaker = {
             newThing.yellSound="roars";
             newThing.burns=false;
             newThing.amphibious=true;
+            newThing.relentless=true;
             break;
             case 'FrostDemon':
             newThing = new Entity(x,y,z,'F','#0ff','Frost Demon',true);
@@ -617,7 +826,7 @@ var EntityMaker = {
             HurtByLiquidMixin(newThing,1);
             MeltMixin(newThing,0);
             newThing.burns=false;
-            RangeMixin(newThing,1,1,8,'Hypothermia',0.3,'*','#0ff',"casts a ray of frost",30,"You feel cold!");
+            RangeMixin(newThing,1,1,8,'Hypothermia',0.3,'*','#0ff',"casts a ray of frost",21,"You feel cold!");
             //WizardMixin(newThing);
             newThing.tempHate.push('hot');
             newThing.yellSound="shivers";
@@ -637,6 +846,7 @@ var EntityMaker = {
             MeltMixin(newThing,1);
             newThing.yellSound="creeks towards you";
             newThing.amphibious=true;
+            newThing.relentless=true;
             break;
             case 'Snake':
             newThing = new Entity(x,y,z,'S','#0f0','Snake',true);
@@ -663,13 +873,28 @@ var EntityMaker = {
             newThing.yellSound="quacks";
             newThing.amphibious=true;
             break;
+            case 'Wizard':
+            newThing = new Entity(x,y,z,'@','#f0f','Wizard',true);
+            ChaseMixin(newThing,'hits',2,false,true);
+            HurtByLiquidMixin(newThing,1);
+            WizardMixin(newThing);
+            newThing.tempHate.push('hot','cold');
+            newThing.yellSound="mutters arcane incantations";
+            break;
+            case 'Dimensional Shambler':
+            newThing = new Entity(x,y,z,'S','#fff','Dimensional Shambler',true);
+            ChaseMixin(newThing,'thrashes','6',false,true);
+            HurtByLiquidMixin(newThing,1);
+            ShamblerMixin(newThing);
+            newThing.yellSound="lets out a deafening roar";
+            break;
             case 'Moosetaur':
             newThing = new Entity(x,y,z,'M','#ff0','Moosetaur',true);
             ChaseMixin(newThing,'tramples',4,false,true);
             HurtByLiquidMixin(newThing,1);
             newThing.tempHate.push('hot');
             newThing.yellSound="bellows";
-            RangeMixin(newThing,0.95,1,12,'Bleeding',0.3,',','#ff0',"fires an arrow",2,"You are bleeding!");
+            RangeMixin(newThing,0.9,1,12,'Bleeding',0.3,',','#ff0',"fires an arrow",3,"You are hit!");
             break;
             case 'Moose':
             newThing = new Entity(x,y,z,'M','#d80','Moose',true);
@@ -685,6 +910,7 @@ var EntityMaker = {
             newThing.tempHate.push('hot');
             newThing.yellSound="growls";
             newThing.amphibious=true;
+            newThing.relentless=true;
             break;
             case 'FlameDemon':
             newThing = new Entity(x,y,z,'F','#fa0','Flame Demon',true);
@@ -696,13 +922,25 @@ var EntityMaker = {
             //newThing.tempHate.push('cold');
             break;
             case 'Snail':
-            newThing = new Entity(x,y,z,'a','#990','Giant snail',true);
+            newThing = new Entity(x,y,z,'\u00E4','#990','Giant Snail',true);
             ChaseMixin(newThing,'crushes',3,true,true);
             OozeMixin(newThing,'#fff');
             HurtByLiquidMixin(newThing,1);
             newThing.tempHate.push('cold');
             newThing.yellSound="wags their eyestalks";
             newThing.amphibious=true;
+            break;
+            case 'LavaSnail':
+            newThing = new Entity(x,y,z,'\u00E4','#f00','Lava Snail',true);
+            ChaseMixin(newThing,'crushes',5,true,true);
+            LiquidOozeMixin(newThing,1);
+            HurtByLiquidMixin(newThing,0);
+            newThing.tempHate.push('cold');
+            newThing.yellSound="wags their eyestalks";
+            newThing.amphibious=true;
+            newThing.burns=false;
+            newThing.immuneToFire=true;
+//            newThing.onFire=true;
             break;
             case 'Creeping Vine':
             newThing = new Entity(x,y,z,'f','#0f0','Creeping Vine',true);
@@ -735,6 +973,8 @@ var EntityMaker = {
             case 'Statue':
             newThing = new Entity(x,y,z,'\u03A9','#ddd','Statue',true);
             PushMixin(newThing);
+            HurtByLiquidMixin(newThing,1);
+            MeltMixin(newThing,-1);
             //DestructMixin(newThing,"smash");
             newThing.burns=false;
             break;
@@ -753,11 +993,45 @@ var EntityMaker = {
             newThing.burns=false;
             newThing.tempHate.push('hot','temperate');
             break;
+            case 'Boulder':
+            newThing = new Entity(x,y,z,'\u03C9','#0ff','Boulder',true);
+            PushMixin(newThing,"You smash the boulder!");
+            HurtByLiquidMixin(newThing,1); // melted by lava
+            MeltMixin(newThing,1);
+            newThing.color = (x+','+y+','+z in Game.map) ? (Game.map[x+','+y+','+z].color) : ('#ccc');
+            newThing.burns=false;
+            break;
             case 'Staircase':
             newThing = new Entity(x,y,z,'>','#fff','Staircase',true);
             newThing.burns=false;
             newThing.immuneToFire=true;
             StairMixin(newThing);
+            break;
+            case 'VictoryChest':
+            newThing = new Entity(x,y,z,'\u03C0','#ff0','Golden Treasure Chest',true);
+            newThing.burns=false;
+            newThing.immuneToFire=true;
+            //DestructMixin(newThing,"open");
+            VictoryChestMixin(newThing);
+            break;
+            case 'DecoyChest':
+            newThing = new Entity(x,y,z,'\u03C0','#ff0','Golden Treasure Chest',true);
+            newThing.burns=false;
+            newThing.immuneToFire=true;
+            //DestructMixin(newThing,"open");
+            FakeChestMixin(newThing);
+            break;
+            case 'NormalChest':
+            newThing = new Entity(x,y,z,'\u03C0','#ccc','Treasure Chest',true);
+            HurtByLiquidMixin(newThing,1); // melted by lava
+            MeltMixin(newThing,-1);
+            DestructMixin(newThing,"open");
+            break;
+            case 'WinStaircase':
+            newThing = new Entity(x,y,z,'<','#ff0','Exit',true);
+            newThing.burns=false;
+            newThing.immuneToFire=true;
+            WinGameMixin(newThing);
             break;
         }
         return newThing;

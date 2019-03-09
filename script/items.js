@@ -151,13 +151,16 @@ var ItemBuilder = {
             case 'Plate Armor':
                 return new Item(name,'[','#0dd',{Bleeding:4},'Heavy armor.','Very protective armor. Wow!',100,'wear','Armor',40);
             case 'Dragonleather Armor':
-                return new Item(name,'[','#0f0',{Bleeding:4,Burning:3,Overheating:6},'Dragon armor.','Armor made from a dragon. Definitely unethical, but it incredibly protective.',100,'wear','Armor',40);
+                return new Item(name,'[','#0f0',{Bleeding:4,Burning:3,Overheating:6},'Dragon armor.','Armor made from a dragon. Definitely unethical, but it is incredibly protective.',100,'wear','Armor',40);
             case 'Wand of Reach':
                 return new Item(name,'/','#ff0',{Reach:Math.max(4,Math.floor(ROT.RNG.getUniform()*Game.level))},'Extends your portal reach.','Holding this lets you acquire portals from a greater distance.',100,'wield','Wand',4);
             case 'Wand of Retreat':
                 return new Item(name,'/','#f00',{'Retreat':1},'For easy escape.','Zap it to immediately travel through your held portal.',Math.floor(ROT.RNG.getUniform()*(4+Game.level/6))+3,'wield','Wand',4);
             case 'Wand of Banishing':
                 return new Item(name,'/','#f0f',{'Banish':1},'Banish foes.','Zap it to banish the targetting entity through your held portal.',Math.floor(ROT.RNG.getUniform()*(3+Game.level/6))+2,'wield','Wand',4);
+            case 'Wand of Nerual':
+                return new Item(name,'/','#0ff',{Reach:20,Banish:1},'Escape with this and win.','The mightiest wand in all the land. Escape with it for glory!',20000,'wield','Wand',20000);
+        
         }
     }
 };

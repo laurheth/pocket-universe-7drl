@@ -80,6 +80,11 @@ li {
     font-weight: bold;
 }
 
+.Victory {
+    color: yellow;
+    font-weight: bold;
+}
+
 #screen {
     margin: 0;
     padding: 0;

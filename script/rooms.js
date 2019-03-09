@@ -16,8 +16,8 @@ var RoomGen = {
             'Chainmail Armor':0.5*this.chanceCurve(4,15),
             'Plate Armor':0.5*this.chanceCurve(12,22),
             'Dragonleather Armor':0.5*this.chanceCurve(18,26),
-            'Wand of Reach':0.1*this.chanceCurve(2,12),
-            'Wand of Retreat':0.1*this.chanceCurve(3,20),
+            'Wand of Reach':0.1*this.chanceCurve(2,26),
+            'Wand of Retreat':0.1*this.chanceCurve(3,26),
             'Wand of Banishing':0.1*this.chanceCurve(4,26),
         };
         switch (biome) {
@@ -36,10 +36,11 @@ var RoomGen = {
                 };
                 opts.monsters={
                     Goblin:this.chanceCurve(1,1),
-                    Dragon:this.chanceCurve(10,20),
+                    Dragon:0.5*this.chanceCurve(10,16),
                     Gargoyle:this.chanceCurve(3,10),
                     BronzeGolem:this.chanceCurve(6,18),
                     Snail:this.chanceCurve(1,3),
+                    Wizard:this.chanceCurve(14,18),
                 };
                 opts.doodads={
                     Statue:2,
@@ -63,13 +64,15 @@ var RoomGen = {
                 };
                 opts.monsters={
                     Goblin:this.chanceCurve(1,1),
-                    Dragon:this.chanceCurve(12,20),
+                    Dragon:this.chanceCurve(12,18),
                     Gargoyle:this.chanceCurve(3,10),
                     BronzeGolem:this.chanceCurve(6,18),
                     Moosetaur:this.chanceCurve(8,18),
                     FrostDemon:this.chanceCurve(4,12),
                     FlameDemon:this.chanceCurve(4,12),
                     Salamander:this.chanceCurve(1,8),
+                    Wizard:this.chanceCurve(10,26),
+                    'Dimensional Shambler':0.5*this.chanceCurve(14,26),
                 };
                 opts.doodads={
                     Statue:2,
@@ -117,13 +120,13 @@ var RoomGen = {
                 opts.features={
                     lake:0.5,
                     river: 0.3,
-                    entitycluster: 0,
-                    forcluster:[],
+                    entitycluster: 0.3,
+                    forcluster:['Boulder'],
                     liquid: 0,
                 };
                 opts.monsters={
                     Goblin:this.chanceCurve(1,1),
-                    Dragon:this.chanceCurve(10,20),
+                    Dragon:0.5*this.chanceCurve(10,20),
                     Snail:this.chanceCurve(1,3),
                 };
                 opts.names1=["Dark","Stoney","Deep","Echoey","Slumber","Rocky"];
@@ -139,15 +142,16 @@ var RoomGen = {
                 opts.features={
                     lake:0.3,
                     river: 0.1,
-                    entitycluster: 0,
-                    forcluster:[],
+                    entitycluster: 0.3,
+                    forcluster:['Boulder'],
                     liquid: 1,
                 };
                 opts.monsters={
                     Salamander:this.chanceCurve(1,8),
-                    Dragon:this.chanceCurve(8,18),
+                    Dragon:0.5*this.chanceCurve(12,16),
+                    LavaSnail:this.chanceCurve(8,18),
                     FlameDemon:this.chanceCurve(4,12),
-                    Volcano:this.chanceCurve(12,26)/10.0,
+                    Volcano:this.chanceCurve(16,26)/20.0,
                 };
                 opts.names1=["Burning","Hot","Molten","Hellish","Searing","Toasty"];
                 opts.names2=["Cavern","Place","Pit","Furnace","Oven","Broiler"];
@@ -208,6 +212,14 @@ var RoomGen = {
         //console.log()
         //this.rectRoom(k,roomSize);
         //var biomeList=['Dungeon','Cold','Cave','Hot','Jungle','Swamp'];
+        var bigroom=false;
+        if (k==0) {
+            if (ROT.RNG.getUniform()>Math.min(0.9,13/Game.level) || Game.level>25) {
+                roomSize[0] *= 2;
+                roomSize[1] *= 2;
+                bigroom=true;
+            }
+        }
         var biomeList = {
             Dungeon: 10,
             Cold: Math.min(10,4+Game.level),
@@ -217,6 +229,24 @@ var RoomGen = {
             Swamp: 10,
             WizardLand: Math.min(10,Game.level/2),
         }
+
+        if (Game.level>25) {
+            biomeList.WizardLand *= 2;
+            biomeList.Swamp /= 2;
+            biomeList.Jungle /= 2;
+        }
+        else if (Game.level == 15) {
+            biomeList.Dungeon *= 2;
+        }
+        else if (Game.level == 20) {
+            biomeList.Hot *= 2;
+            biomeList.Cold /= 2;
+        }
+        else if (Game.level == 10) {
+            biomeList.Cold *= 2;
+            biomeList.Hot /= 2;
+        }
+
         var opts=this.biomeOpts(ROT.RNG.getWeightedValue(biomeList));
         //console.log(opts.monsters);
         var roomBounds=[0,0,0,0];
@@ -239,10 +269,21 @@ var RoomGen = {
 
             if ('lake' in opts.features && opts.features.lake > ROT.RNG.getUniform()) {
                 this.addLake(k, roomBounds, opts.features.liquid);
-
             }
             else if ('river' in opts.features && opts.features.river > ROT.RNG.getUniform()) {
                 this.addRiver(k, roomBounds, opts.features.liquid);
+            }
+
+            if (bigroom) {
+                if ('lake' in opts.features && opts.features.lake > ROT.RNG.getUniform()) {
+                    this.addLake(k, roomBounds, opts.features.liquid);
+                }
+                else if ('river' in opts.features && opts.features.river > ROT.RNG.getUniform()) {
+                    this.addRiver(k, roomBounds, opts.features.liquid);
+                }
+                while ('entitycluster' in opts.features && opts.features.entitycluster > ROT.RNG.getUniform() && opts.features.forcluster.length>0) {
+                    this.addEntityCluster(k,roomBounds,ROT.RNG.getItem(opts.features.forcluster));
+                }
             }
 
             while ('entitycluster' in opts.features && opts.features.entitycluster > ROT.RNG.getUniform() && opts.features.forcluster.length>0) {
@@ -252,7 +293,7 @@ var RoomGen = {
 
         // Place entities and stuff!
         var roomCells=[];
-        roomCells = this.placeEntities(k,opts.monsters,roomBounds,0.004);
+        roomCells = this.placeEntities(k,opts.monsters,roomBounds,0.004+0.00005*Game.level);
         if ('doodads' in opts) {
             roomCells = this.placeEntities(k,opts.doodads,roomBounds,0.05);
         }
@@ -321,6 +362,15 @@ var RoomGen = {
         let index = Math.floor(ROT.RNG.getUniform()*roomCells.length);
         if (roomCells[index] in Game.map && Game.map[roomCells[index]].contains==null) {
             Game.map[roomCells[index]].contains = ItemBuilder.itemByName(ROT.RNG.getWeightedValue(list));
+            if (Game.map[roomCells[index]].contains.name.includes("Wand") || Game.map[roomCells[index]].contains.name.includes("Armor")) {
+                if (Game.map[roomCells[index]].entity == null && ROT.RNG.getUniform() > 0.5 ) {
+                    let parts=roomCells[index].split(',');
+                    let px=parseInt(parts[0]);
+                    let py=parseInt(parts[1]);
+                    let pz=parseInt(parts[2]);
+                    Game.addEntity('NormalChest',px,py,pz);
+                }
+            }
             return true;
         }
         return false;
@@ -425,6 +475,8 @@ var RoomGen = {
         var dy=0;
         var direction=this.randOrtho();
         var twistyness = 0.2 * (ROT.RNG.getUniform());
+        var maxStraight=10;
+        var numStraight=0;
         while (Game.freeCells.length < targFree && breaker<100) {
             breaker++;
             this.carveHall(x,y,k,thickness,opts,newWalls);
@@ -434,8 +486,12 @@ var RoomGen = {
             if (y+thickness/2+1 > roomBounds[3]) {roomBounds[3]=y+thickness/2+1;}
             x+=direction[0];
             y+=direction[1];
-            if (ROT.RNG.getUniform()<twistyness) {
+            if (ROT.RNG.getUniform()<twistyness || numStraight>maxStraight) {
+                numStraight=0;
                 direction=this.randOrtho();
+            }
+            else {
+                numStraight++;
             }
         }
         return newWalls;

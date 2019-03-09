@@ -82,7 +82,8 @@ var Game = {
         //this.scheduler.add(this._addEntity('FrostDemon'),true);
         //this.scheduler.add(this._addEntity('Volcano'),true);
         //this.scheduler.add(this._addEntity('Staircase'),true);
-        this.scheduler.add(this.addImportant('Staircase'),true);
+        //this.scheduler.add(this.addImportant('Staircase'),true);
+        this.importantFeatures();
         this.scheduler.add(TileManager,true);
         this.engine = new ROT.Engine(this.scheduler);
         this.engine.start();
@@ -98,8 +99,20 @@ var Game = {
         this._generateMap();
         this.scheduler.add(this.player,true);
         this.scheduler.add(TileManager,true);
-        this.scheduler.add(this.addImportant('Staircase'),true);
+        this.importantFeatures();
         //this.scheduler.add(this._addEntity('Staircase'),true);
+    },
+
+    importantFeatures: function() {
+        if (this.level<26) {
+            this.scheduler.add(this.addImportant('Staircase'),true);
+        }
+        else {
+            this.scheduler.add(this.addImportant('VictoryChest'),true);
+            this.scheduler.add(this._addEntity('DecoyChest'),true);
+            this.scheduler.add(this._addEntity('DecoyChest'),true);
+            this.scheduler.add(this._addEntity('DecoyChest'),true);
+        }
     },
 
     addImportant: function(name) {
@@ -116,7 +129,7 @@ var Game = {
             py = parseInt(parts[1]);
             pz = parseInt(parts[2]);
             attempts++;
-        } while ((pz == this.player.z && attempts<5) || !this._portalPathExists(this.player.z,pz));
+        } while ((pz == this.player.z && attempts < 5) || !this._portalPathExists(this.player.z,pz));
 
         return EntityMaker.makeByName(name,px,py,pz);
     },
@@ -136,7 +149,7 @@ var Game = {
         var newPortal=null;
         var pC;
         var k=0;
-        while (this.freeCells.length < 800+(50*this.level) || k<(5+this.level)) { // dimension
+        while (this.freeCells.length < 800+(50*this.level) || k<(5+Math.sqrt(this.level))) { // dimension
             let roomSize=[Math.floor((12+Math.sqrt(this.level))*ROT.RNG.getUniform())+6,Math.floor((12+Math.sqrt(this.level))*ROT.RNG.getUniform())+6];
             if (k>0 && this.walls.length>0) {
                 let index = Math.floor(ROT.RNG.getUniform() * this.walls.length);
@@ -332,9 +345,9 @@ var Game = {
         return EntityMaker.makeByName(name,px,py,pz);//new Entity(px,py,pz,'g','#0f0','Goblin',true);
     },
 
-    addEntity: function(name,x,y,z) {
+    addEntity: function(name,x,y,z,avoidWater=false) {
         let key=x+','+y+','+z;
-        if (key in Game.map && Game.map[key].entity == null && Game.map[key].passThrough()) {
+        if (key in Game.map && Game.map[key].entity == null && Game.map[key].passThrough() && (!avoidWater || (Game.map[key].water<Game.deepThreshold && !Game.map[key].lake))) {
             var newEntity=EntityMaker.makeByName(name,x,y,z);
             if (newEntity!=null) {
                 Game.scheduler.add(newEntity,true);
@@ -454,7 +467,26 @@ var Game = {
             case "Poison":
             return 30;
         }
-    }
+    },
+    sendToZ: function (sendToZ) {
+        var newKey = null;
+        var breaker = 0;
+
+        while (breaker < 100 && !newKey) {
+            breaker++;
+            for (let i = -breaker; i <= breaker; i++) {
+                for (let j = -breaker; j <= breaker; j++) {
+                    let testKey = i + ',' + j + ',' + sendToZ;
+                    if (testKey in Game.map && Game.map[testKey].entity == null && Game.map[testKey].passThrough()) {
+                        newKey = testKey;
+                        break;
+                    }
+                }
+                if (newKey != null) { break; }
+            }
+        }
+        return newKey;
+    },
 };
 
 // Targetting stuff, doubles for looking?
@@ -511,7 +543,7 @@ var targetting = {
     },
     getKey: function() {
         return tx+','+ty+','+tz;
-    }
+    },
 }
 
 // Player stuff
@@ -544,7 +576,6 @@ Player.prototype.seriousThreshold = {
 };
 
 Player.prototype.wound = function(dmg) {
-    if (dmg <= 0) {return;}
     if (this.armor != null) {
         if ('Bleeding' in this.armor.effects) {
             let dmgAbsorbed = dmg - Math.max(1,dmg-this.armor.effects.Bleeding);
@@ -552,6 +583,7 @@ Player.prototype.wound = function(dmg) {
             this.armor.damage(dmgAbsorbed);
         }
     }
+    if (dmg <= 0) {return;}
     if ('Bleeding' in this.status) {
         this.status.Bleeding -= dmg;
     }
@@ -1310,23 +1342,7 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
         if (sendToZ<0) {
             return null;
         }
-        var newKey=null;
-        var breaker=0;
-    
-        while (breaker < 100 && !newKey) {
-            breaker++;
-            for (let i=-breaker;i<=breaker;i++) {
-                for (let j=-breaker;j<=breaker;j++) {
-                    let testKey = i+','+j+','+sendToZ;
-                    if (testKey in Game.map && Game.map[testKey].entity==null && Game.map[testKey].passThrough()) {
-                        newKey=testKey;
-                        break;
-                    }
-                }
-                if (newKey != null) {break;}
-            }
-        }
-        return newKey;
+        return Game.sendToZ(sendToZ);
     }
 
     this.name = function(which=-1) {
