@@ -155,7 +155,7 @@ var ItemBuilder = {
             case 'Snowman Armor':
                 return new Item(name,'[','#fff',{Bleeding:2,Burning:1,Overheating:2},'Protects from fire.',"Armor designed by someone who didn't want their snowpeople to melt.",100,'wear','Armor',40);
             case 'Wand of Reach':
-                return new Item(name,'/','#ff0',{Reach:Math.max(4,Math.floor(ROT.RNG.getUniform()*Game.level))},'Extends your portal reach.','Holding this lets you acquire portals from a greater distance.',100,'wield','Wand',4);
+                return new Item(name,'/','#ff0',{Reach:Math.max(4,Math.floor(ROT.RNG.getUniform()*Game.level))},'Extends your portal reach.','Holding this lets you acquire portals from a greater distance.',Math.floor(ROT.RNG.getUniform()*Game.level)+10,'wield','Wand',4);
             case 'Wand of Retreat':
                 return new Item(name,'/','#f00',{'Retreat':1},'For easy escape.','Zap it to immediately travel through your held portal.',Math.floor(ROT.RNG.getUniform()*(4+Game.level/6))+3,'wield','Wand',4);
             case 'Wand of Banishing':

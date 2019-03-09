@@ -23,7 +23,7 @@ var Game = {
     lastMessage: [""],
     roomNames:[],
     roomTags:{},
-    level: 26,
+    level: 1,
     targetMode: false,
     portalList:[],
 
@@ -771,6 +771,19 @@ Player.prototype.getPortal = function() {
             }
             if (success) {
                 break;
+            }
+        }
+        if (breaker > 2 && this.wand != null) {
+            this.wand.uses--;
+            if (this.wand.uses <= 0) {
+                for (let i = 0; i < this.inventory.length; i++) {
+                    if (this.inventory[i] == this.wand) {
+                        this.inventory.splice(i, 1);
+                    }
+                }
+                Game.sendMessage("The "+this.wand.name+" burns into ashes.");
+                this.wand = null;
+                //success=true;
             }
         }
     }

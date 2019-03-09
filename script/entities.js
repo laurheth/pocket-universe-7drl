@@ -288,8 +288,9 @@ var ShamblerMixin = function(obj) {
     obj.nextJump=100;
     obj.relentless=true;
     obj.zap = function () {
+        this.nextJump--;
         if (this.nextJump <= 0) {
-            this.nextJump = Math.floor(101*ROT.RNG.getUniform())+50;
+            this.nextJump = Math.floor(81*ROT.RNG.getUniform())+40;
             if (this.z != Game.player.z && this.seen) {
                 let newKey = Game.sendToZ(Game.player.z);
                 if (newKey != null && newKey in Game.map && Game.map[newKey].entity == null) {
