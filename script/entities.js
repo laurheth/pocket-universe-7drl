@@ -92,8 +92,14 @@ spreadFire = function(key,localOnly=false) {
                             }
                             else if (Game.map[testKey].entity == Game.player) {
                                 if (!('Burning' in Game.player.status)) {
-                                    Game.statusMessage("You have caught on fire!", 'Burning');
-                                    Game.player.status.Burning = 10;
+                                    if (!Game.player.checkFireProtection()) {
+                                        Game.statusMessage("You have caught on fire!", 'Burning');
+                                        Game.player.status.Burning = 10;
+                                    }
+                                }
+                                if (Game.player.checkFireProtection()) {
+                                    Game.sendMessage("Your "+Game.player.armor.name+" protects you from the fire!");
+                                    Game.player.armor.damage(1,true);
                                 }
                             }
                         }
@@ -426,12 +432,18 @@ var RangeMixin = function(obj,accuracy,number,range,effect,frequency,character='
                 var ty=Game.player.y;
                 if (ROT.RNG.getUniform()<this.rangedetails.acc) {
                     if (this.rangedetails.eff != 'Bleeding') {
-                        if (this.rangedetails.eff in Game.player.status) {
-                            Game.player.status[this.rangedetails.eff] -= this.rangedetails.dmg;
+                        if (this.rangedetails.eff == 'Burning' && Game.player.checkFireProtection()) {
+                            Game.sendMessage("Your " +Game.player.armor.name +" protects you from the fire!");
+                            Game.player.armor.damage(1, true);
                         }
                         else {
-                            Game.statusMessage(this.rangedetails.hitmsg, this.rangedetails.eff);
-                            Game.player.status[this.rangedetails.eff] = Game.startValue(this.rangedetails.eff) - this.rangedetails.dmg;
+                            if (this.rangedetails.eff in Game.player.status) {
+                                Game.player.status[this.rangedetails.eff] -= this.rangedetails.dmg;
+                            }
+                            else {
+                                Game.statusMessage(this.rangedetails.hitmsg, this.rangedetails.eff);
+                                Game.player.status[this.rangedetails.eff] = Game.startValue(this.rangedetails.eff) - this.rangedetails.dmg;
+                            }
                         }
                     }
                     else {

@@ -578,9 +578,16 @@ Player.prototype.seriousThreshold = {
 Player.prototype.wound = function(dmg) {
     if (this.armor != null) {
         if ('Bleeding' in this.armor.effects) {
-            let dmgAbsorbed = dmg - Math.max(1,dmg-this.armor.effects.Bleeding);
-            dmg = Math.max(1,dmg-this.armor.effects.Bleeding); // armor is damage reduction
-            this.armor.damage(dmgAbsorbed);
+            if (dmg > this.armor.effects.Bleeding || Math.floor((-dmg+this.armor.effects.Bleeding+1) * ROT.RNG.getUniform())==0) { 
+                let dmgAbsorbed = dmg - Math.max(1,dmg-this.armor.effects.Bleeding);
+                dmg = Math.max(1,dmg-this.armor.effects.Bleeding); // armor is damage reduction
+                this.armor.damage(dmgAbsorbed);
+            }
+            else {
+                Game.sendMessage("Your "+this.armor.name+" protects you!");
+                this.armor.damage(dmg);
+                dmg=0;
+            }
         }
     }
     if (dmg <= 0) {return;}
@@ -605,6 +612,9 @@ Player.prototype.printStatus = function() {
     for (let i=0;i<stats.length;i++) {
         if (this.armor != null && stats[i] in this.armor.effects && stats[i] != 'Bleeding') {
             if (Game.currentTurn % this.armor.effects[stats[i]] == 0) { // lower numbers better for armor effects
+                if (stats[i]=='Burning') {
+                    this.armor.damage(1,true);
+                }
                 this.status[stats[i]]++;
             }
         }
@@ -802,6 +812,10 @@ Player.prototype.openPortal = function(openClose) {
     return success;
 };
 
+Player.prototype.checkFireProtection = function() {
+    return (this.armor != null && ('Burning' in this.armor.effects) && (Game.currentTurn % this.armor.effects.Burning == 0));
+}
+
 Player.prototype.act = function () {
     Game.engine.lock();
     //console.log(this.getKey());
@@ -818,13 +832,18 @@ Player.prototype.act = function () {
     // Lava logic
     if (this.getKey() in Game.map && Game.map[this.getKey()].liquidType==1 && Game.map[this.getKey()].water > Game.minWater) {
         //Game.sendMessage("The lava sets you aflame!",false,"",'Burning');
-        if ('Burning' in this.status) {
-                Game.statusMessage("The lava burns!!",'Burning');
-                this.status.Burning-=3;
+        if (!this.checkFireProtection()) {
+            if ('Burning' in this.status) {
+                Game.statusMessage("The lava burns!!", 'Burning');
+                this.status.Burning -= 3;
+            }
+            else {
+                Game.statusMessage("The lava has set you aflame!", 'Burning');
+                this.status.Burning = 10;
+            }
         }
         else {
-                Game.statusMessage("The lava has set you aflame!",'Burning');
-                this.status.Burning=10;
+            this.armor.damage(2,true);
         }
     }
 
