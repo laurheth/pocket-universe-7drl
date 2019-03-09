@@ -23,6 +23,7 @@ var RoomGen = {
             case 'Dungeon':
                 opts.wallColor='#ddd';
                 opts.floorColor='#999';
+                opts.tileNames=['Stone Wall','Stone Floor'];
                 opts.roomOpts=['rectRoom','tRoom','hallRoom','roundRoom'];
                 opts.features={
                     lake:0.1,
@@ -49,6 +50,7 @@ var RoomGen = {
             case 'WizardLand':
                 opts.wallColor='#d0f';
                 opts.floorColor='#96a';
+                opts.tileNames=['Azurite Wall','Stone Floor'];
                 opts.roomOpts=['rectRoom','tRoom','hallRoom','roundRoom'];
                 opts.features={
                     lake:0.1,
@@ -82,6 +84,7 @@ var RoomGen = {
                 //opts.floorChars=['.'];
                 break;
             case 'Cold':
+                opts.tileNames=['Ice Wall','Ice Floor'];
                 opts.wallColor='#ccf';
                 opts.floorColor='#bbf';
                 opts.roomOpts=this.roomOpts;
@@ -107,6 +110,7 @@ var RoomGen = {
             case 'Cave':
                 opts.wallColor='#c63';
                 opts.floorColor='#b52';
+                opts.tileNames=['Stone Wall','Stone Floor'];
                 opts.roomOpts=['caveRoom','roundRoom'];
                 opts.features={
                     lake:0.5,
@@ -127,6 +131,7 @@ var RoomGen = {
             case 'Hot':
                 opts.wallColor='#f31';
                 opts.floorColor='#e20';
+                opts.tileNames=['Stone Wall','Stone Floor'];
                 opts.roomOpts=this.roomOpts;
                 opts.tags=['hot'];
                 opts.features={
@@ -149,6 +154,7 @@ var RoomGen = {
             case 'Jungle':
                 opts.wallColor='#0f0';
                 opts.floorColor='#0e0';
+                opts.tileNames=['Vine-covered Wall','Grassy Floor'];
                 opts.roomOpts=['caveRoom','roundRoom'];
                 opts.features={
                     lake:0.1,
@@ -168,6 +174,7 @@ var RoomGen = {
                 opts.names2=["Forest","Jungle","Wood"];
                 break;
             case 'Swamp':
+                opts.tileNames=['Vine-covered Wall','Moss Floor'];
                 opts.wallColor='#0c3';
                 opts.floorColor='#0b2';
                 opts.roomOpts=['caveRoom','roundRoom'];

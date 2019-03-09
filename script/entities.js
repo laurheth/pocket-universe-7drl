@@ -339,8 +339,17 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
 
 var PushMixin = function(obj) {
     obj.actOn = function(direction) {
-        Game.sendMessage("You push the "+this.name.toLowerCase()+".");
-        this.step(direction[0], direction[1]);
+        if (this.step(direction[0], direction[1]) != null) {
+            Game.sendMessage("You push the "+this.name.toLowerCase()+".");
+        }
+        else {
+            Game.sendMessage("You try to push the "+this.name.toLowerCase()+", but it breaks instead!");
+            Game.map[this.getKey()].entity=null;
+            this.active=false;
+            Game.map[this.getKey()].color=this.color;
+            Game.map[this.getKey()].char=',';
+            Game.map[this.getKey()].name="Wrecked "+this.name;
+        }
     }
 };
 
