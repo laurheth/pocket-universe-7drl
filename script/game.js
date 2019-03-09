@@ -23,8 +23,9 @@ var Game = {
     lastMessage: [""],
     roomNames:[],
     roomTags:{},
-    level: 1,
+    level: 26,
     targetMode: false,
+    portalList:[],
 
     init: function () {
         let screen = document.getElementById('screen');
@@ -80,7 +81,8 @@ var Game = {
         //this.scheduler.add(this._addEntity('FrostDemon'),true);
         //this.scheduler.add(this._addEntity('FrostDemon'),true);
         //this.scheduler.add(this._addEntity('Volcano'),true);
-        this.scheduler.add(this._addEntity('Staircase'),true);
+        //this.scheduler.add(this._addEntity('Staircase'),true);
+        this.scheduler.add(this.addImportant('Staircase'),true);
         this.scheduler.add(TileManager,true);
         this.engine = new ROT.Engine(this.scheduler);
         this.engine.start();
@@ -96,7 +98,27 @@ var Game = {
         this._generateMap();
         this.scheduler.add(this.player,true);
         this.scheduler.add(TileManager,true);
-        this.scheduler.add(this._addEntity('Staircase'),true);
+        this.scheduler.add(this.addImportant('Staircase'),true);
+        //this.scheduler.add(this._addEntity('Staircase'),true);
+    },
+
+    addImportant: function(name) {
+        var stairZ=-1;
+        var attempts=0;
+        var px;
+        var py;
+        var pz;
+        do {
+            let index = Math.floor(ROT.RNG.getUniform() * this.freeCells.length);
+            let key = this.freeCells.splice(index, 1)[0];
+            let parts = key.split(',');
+            px = parseInt(parts[0]);
+            py = parseInt(parts[1]);
+            pz = parseInt(parts[2]);
+            attempts++;
+        } while ((pz == this.player.z && attempts<5) || !this._portalPathExists(this.player.z,pz));
+
+        return EntityMaker.makeByName(name,px,py,pz);
     },
 
     burnColor: function() {
@@ -105,6 +127,7 @@ var Game = {
     },
 
     _generateMap: function () {
+        this.portalList=[];
         this.freeCells = [];
         this.walls = [];
         // create some rooms. Third index is "dimension"
@@ -132,6 +155,7 @@ var Game = {
             if (k>0 && this.walls.length>0) {
                 //console.log(pC);
                 newPortal = new Connection(pC[0],pC[1],pC[2],pC[3],pC[4],pC[5]);
+                this.portalList.push(newPortal);
                 //this.map[newPortal.getKey(1)].contains=newPortal;
                 //this.map[newPortal.getKey(0)].contains=newPortal;
                 if (!(newPortal.correctEntrance(1))) {
@@ -161,6 +185,7 @@ var Game = {
                 }
 
                 newPortal = new Connection(pC[0], pC[1], pC[2], pC[3], pC[4], pC[5]);
+                this.portalList.push(newPortal);
                 this.map[newPortal.getKey(1)].contains = newPortal;
                 this.map[newPortal.getKey(0)].contains = newPortal;
                 if (!(newPortal.correctEntrance(1))) {
@@ -173,20 +198,45 @@ var Game = {
             }
         }
 
-        /*var pC=[0,2,0,7,4,1];
-        var portal = new Connection(pC[0],pC[1],pC[2],pC[3],pC[4],pC[5]);
-
-        this.map[portal.getKey(0)].contains=portal;
-        this.map[portal.getKey(1)].contains=portal;
-
-        pC = [0,4,0,3,0,1];
-        var portal2 = new Connection(pC[0],pC[1],pC[2],pC[3],pC[4],pC[5]);
-
-        this.map[portal2.getKey(0)].contains=portal2;
-        this.map[portal2.getKey(1)].contains=portal2;
-
-        portal2.correctEntrance(1);*/
-
+        // Check if all portals are up and running. Attempt to fix them if not
+        for (let i=0;i<this.portalList.length;i++) {
+            // Check both ends
+            var success;//=true;
+            var didSomething=false;
+            for (let j=0;j<2;j++) {
+                if (!(this.portalList[i].getKey(j) in Game.map) || Game.map[this.portalList[i].getKey(j)].contains != this.portalList[i]) {
+                    didSomething=true;
+                    console.log("Broken portal found. Attempting to fix...");
+                    console.log(this.portalList[i].getKey(0)+"<->"+this.portalList[i].getKey(1));
+                    //let otherj = (j+1) % 2;
+                    success=true;
+                    if (!this.portalList[i].correctEntrance(!j,true)) {
+                        success &= this.portalList[i].correctEntrance(j,true);
+                        success &= this.portalList[i].correctEntrance(!j);
+                    }
+                    else {
+                        success &= this.portalList[i].correctEntrance(j);
+                    }
+                }
+                else {
+                    success=true;
+                }
+            }
+            if (!success) {
+                console.log("Unsuccessful. Removing portal.");
+                //Not sure what to do if it really doesn't work lmao
+                // remove it, it'll be fine. Maybe.
+                for (let j=0;j<2;j++) {
+                    if (this.portalList[i].getKey(j) in Game.map && Game.map[this.portalList[i].getKey(j)].contains == this.portalList[i]) {
+                        Game.map[this.portalList[i].getKey(j)].contains=null;
+                    }
+                }
+                this.portalList[i]=null;
+            }
+            else if (didSomething) {
+                console.log("Success!");
+            }
+        }
         
         let index = Math.floor(ROT.RNG.getUniform() * this.freeCells.length);
         let key = this.freeCells.splice(index, 1)[0];
@@ -203,7 +253,74 @@ var Game = {
         //this._addEntity();  
     },
 
-
+    _portalPathExists: function(sz,ez) {
+        //console.log(sz + " " + ez);
+        //console.log(this.portalList);
+        if (sz==ez) {return true;}
+        if (sz<0 || ez<0) {return false;}
+        var connectObj = {};
+        for (let i=0;i<this.portalList.length;i++) {
+            if (this.portalList[i] != null) {
+                let zList = this.portalList[i].zList();
+                //console.log(zList);
+                if (!(zList[0] in connectObj)) {
+                    connectObj[zList[0]]=[];
+                }
+                connectObj[zList[0]].push(zList[1]);
+                if (!(zList[1] in connectObj)) {
+                    connectObj[zList[1]]=[];
+                }
+                connectObj[zList[1]].push(zList[0]);
+            }
+        }
+        //console.log(connectObj);
+        var toSearch;//
+        if (sz in connectObj) {
+            toSearch = connectObj[sz];
+        }
+        else {
+            return false; // Start is disconnected, no path
+        }
+        if (!(ez in connectObj)) {
+            return false; // end is disconnected, no path
+        }
+        var searched=[sz];
+        var success=false;
+        while (!success && toSearch.length > 0) {
+            console.log("Searching...");
+            searched.push(toSearch[0]);
+            if (toSearch[0] == ez) {
+                success=true;
+                break;
+            }
+            else {
+                if (toSearch[0] in connectObj) {
+                    for (let i=0;i<connectObj[toSearch[0]].length;i++) {
+                        //console.log(connectObj[toSearch[0]]);
+                        if (i>50) {
+                            
+                            console.log("That's strange. Force retry.");
+                            return false;
+                        }
+                        //console.log(connectObj[toSearch[0]].length);
+                        let addSearch = connectObj[toSearch[0]][i];
+                        if (searched.indexOf(addSearch) < 0 && toSearch.indexOf(addSearch) < 0) {
+                            toSearch.push(addSearch);
+                        }
+                    }
+                    //console.log("??");
+                }
+            }
+            toSearch.shift();
+        }
+        if (success) {
+            console.log("Path found!");
+        }
+        else {
+            console.log("Path NOT found");
+        }
+        return success;
+    },
 
     _addEntity: function(name) {
         let index = Math.floor(ROT.RNG.getUniform() * this.freeCells.length);
@@ -430,7 +547,9 @@ Player.prototype.wound = function(dmg) {
     if (dmg <= 0) {return;}
     if (this.armor != null) {
         if ('Bleeding' in this.armor.effects) {
+            let dmgAbsorbed = dmg - Math.max(1,dmg-this.armor.effects.Bleeding);
             dmg = Math.max(1,dmg-this.armor.effects.Bleeding); // armor is damage reduction
+            this.armor.damage(dmgAbsorbed);
         }
     }
     if ('Bleeding' in this.status) {
@@ -458,6 +577,11 @@ Player.prototype.printStatus = function() {
             }
         }
         this.status[stats[i]]--;
+        // Damage a random inventory item, maybe. Being on fire is bad, actually!!
+        if (stats[i]=='Burning' && ROT.RNG.getUniform()<0.5 && this.inventory.length>0) {
+            let index = Math.floor(this.inventory.length * ROT.RNG.getUniform());
+            this.inventory[index].damage(1,true);
+        }
         // Succumb to status effect
         if (this.status[stats[i]]<0) {
             if (stats[i]=='Bleeding') {
@@ -831,6 +955,7 @@ Player.prototype.act = function () {
                 }
             }
             Game.map[this.getKey()].color = '#f00';
+            Game.map[this.getKey()].name='Blood';
         }
     }
 
@@ -1058,6 +1183,9 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
             return [this.p2[0],this.p2[1]];
         }
     };
+    this.zList=function() {
+        return [this.p1[2],this.p2[2]];
+    }
     // corrects entrance to mesh with entrace 1
     this.correctEntrance = function(which,acceptAny=false) {
         var desiredDirection;
@@ -1531,9 +1659,6 @@ function Tile(char,color,passable,seethrough,contains,direction,water=0,liquidTy
         }
     }
     this.getName = function() {
-        if ('name' in this) {
-            return this.name;
-        }
         let liquidNames = ['Water','Lava'];
         if (this.liquidType >= 0) {
             if (this.water > Game.deepThreshold || this.lake) {
@@ -1542,6 +1667,9 @@ function Tile(char,color,passable,seethrough,contains,direction,water=0,liquidTy
             else if (this.water > Game.minWater) {
                 return 'Shallow '+liquidNames[this.liquidType];
             }
+        }
+        if ('name' in this) {
+            return this.name;
         }
         if (this.char=='.') {
             return 'Stone Floor';

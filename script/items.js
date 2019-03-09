@@ -133,27 +133,31 @@ var ItemBuilder = {
         switch(name) {
             default:
             case 'Coffee':
-                return new Item(name,'u','#fff',{Bleeding:2,Hypothermia:50,Burning:3,Overheating:-10},'Warm, refreshing drink.','A hot cup of coffee! Warms the body, soothes the soul.',1,'drink');
+                return new Item(name,'u','#fff',{Bleeding:2,Hypothermia:50,Burning:3,Overheating:-10},'Warm, refreshing drink.','A hot cup of coffee! Warms the body, soothes the soul.',2,'drink');
+            case 'Americano':
+                return new Item(name,'u','#fcf',{Bleeding:2,Hypothermia:100,Burning:3,Overheating:-15},'Hot, the way you like it.','A hot americano! You need the kick right about now.',2,'drink');
             case 'Icecream':
                 return new Item(name,'\u2200','#faf',{Bleeding:3,Overheating:50, Hypothermia:-10},'A cold snack.','An ice cream cone! Wow, so refreshing!',1,'eat');
+            case 'Sundae':
+                return new Item(name,'\u2200','#f4f',{Bleeding:3,Overheating:100, Hypothermia:-15},'With chocolate!','An ice cream sundae! Incredible.',1,'eat');
             case 'Healing Potion':
-                return new Item(name,'+','#0f0',{Bleeding:20,Poison:50},'Heals the body.','A glowing green concoction to make you healthy.',1,'drink');
+                return new Item(name,'+','#0f0',{Bleeding:20,Poison:50},'Heals the body.','A glowing green concoction to make you healthy.',2,'drink');
             case 'Parka':
-                return new Item(name,'[','#ddf',{Bleeding:0,Hypothermia:2},'Protects from the cold.','A big toasty parka. Not much use in a fight though.',100,'wear','Armor');
+                return new Item(name,'[','#ddf',{Bleeding:0,Hypothermia:2},'Protects from the cold.','A big toasty parka. Not much use in a fight though.',100,'wear','Armor',10);
             case 'Leather Armor':
-                return new Item(name,'[','#f90',{Bleeding:1,Hypothermia:10},'Light armor.','Basic armor made from hardenned leather.',100,'wear','Armor');
+                return new Item(name,'[','#f90',{Bleeding:1,Hypothermia:10},'Light armor.','Basic armor made from hardenned leather.',100,'wear','Armor',10);
             case 'Chainmail Armor':
-                return new Item(name,'[','#ddd',{Bleeding:2},'Medium armor.','Armor made from interlocking chain links.',100,'wear','Armor');
+                return new Item(name,'[','#ddd',{Bleeding:2},'Medium armor.','Armor made from interlocking chain links.',100,'wear','Armor',20);
             case 'Plate Armor':
-                return new Item(name,'[','#0dd',{Bleeding:4},'Heavy armor.','Very protective armor. Wow!',100,'wear','Armor');
+                return new Item(name,'[','#0dd',{Bleeding:4},'Heavy armor.','Very protective armor. Wow!',100,'wear','Armor',40);
             case 'Dragonleather Armor':
-                return new Item(name,'[','#0f0',{Bleeding:4,Burning:3,Overheating:6},'Dragon armor.','Armor made from a dragon. Definitely unethical, but it incredibly protective.',100,'wear','Armor');
+                return new Item(name,'[','#0f0',{Bleeding:4,Burning:3,Overheating:6},'Dragon armor.','Armor made from a dragon. Definitely unethical, but it incredibly protective.',100,'wear','Armor',40);
             case 'Wand of Reach':
-                return new Item(name,'/','#ff0',{Reach:Math.max(4,Math.floor(ROT.RNG.getUniform()*Game.level))},'Extends your portal reach.','Holding this lets you acquire portals from a greater distance.',100,'wield','Wand');
+                return new Item(name,'/','#ff0',{Reach:Math.max(4,Math.floor(ROT.RNG.getUniform()*Game.level))},'Extends your portal reach.','Holding this lets you acquire portals from a greater distance.',100,'wield','Wand',4);
             case 'Wand of Retreat':
-                return new Item(name,'/','#f00',{'Retreat':1},'For easy escape.','Zap it to immediately travel through your held portal.',Math.floor(ROT.RNG.getUniform()*(4+Game.level/2))+3,'wield','Wand');
+                return new Item(name,'/','#f00',{'Retreat':1},'For easy escape.','Zap it to immediately travel through your held portal.',Math.floor(ROT.RNG.getUniform()*(4+Game.level/6))+3,'wield','Wand',4);
             case 'Wand of Banishing':
-                return new Item(name,'/','#f0f',{'Banish':1},'Banish foes.','Zap it to banish the targetting entity through your held portal.',Math.floor(ROT.RNG.getUniform()*(3+Game.level/2))+2,'wield','Wand');
+                return new Item(name,'/','#f0f',{'Banish':1},'Banish foes.','Zap it to banish the targetting entity through your held portal.',Math.floor(ROT.RNG.getUniform()*(3+Game.level/6))+2,'wield','Wand',4);
         }
     }
 };
@@ -165,7 +169,7 @@ var UseMessages = {
     Overheating: ["That cooled you down!","You feel hotter!"],
 }
 
-function Item(name, char, color, effects,shortDescription,longDescription,uses=1,verb='use',itemType='consumable') {
+function Item(name, char, color, effects,shortDescription,longDescription,uses=1,verb='use',itemType='consumable',hp=1) {
     this.name=name;
     this.uses=uses;
     this.char=char;
@@ -175,6 +179,7 @@ function Item(name, char, color, effects,shortDescription,longDescription,uses=1
     this.itemType=itemType;
     this.shortDescription=shortDescription;
     this.longDescription=longDescription;
+    this.hitPoints=hp;
     this.lightPasses=function() {return true;};
     this.passThrough=function() {return true;};
     this.getChar=function() {return this.char;};
@@ -182,6 +187,28 @@ function Item(name, char, color, effects,shortDescription,longDescription,uses=1
     this.infoString=function() {
         return this.name + " - "+this.shortDescription;
     };
+    this.damage=function(dmg,fire=false) {
+        this.hitPoints -= dmg;
+        if (this.hitPoints < 0) {
+            if (!fire) {
+                Game.sendMessage("Your "+this.name+" was destroyed!");
+            }
+            else {
+                Game.sendMessage("Your "+this.name+" was destroyed by the fire!");
+            }
+            for (let i = 0; i < Game.player.inventory.length; i++) {
+                if (Game.player.inventory[i] == this) {
+                    Game.player.inventory.splice(i, 1);
+                }
+            }
+            if (Game.player.wand == this) {
+                Game.player.wand = null;
+            }
+            else if (Game.player.armor == this) {
+                Game.player.armor = null;
+            }
+        }
+    }
     this.use = function() {
         if (this.uses<0) {
             return;

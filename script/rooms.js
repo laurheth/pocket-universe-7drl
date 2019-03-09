@@ -8,22 +8,24 @@ var RoomGen = {
         opts.items={
             'Coffee':this.chanceCurve(1,1),
             'Icecream':this.chanceCurve(1,1),
+            'Americano':this.chanceCurve(10,18),
+            'Sundae':this.chanceCurve(10,18),
             'Healing Potion':this.chanceCurve(1,6),
-            'Parka':this.chanceCurve(2,5),
-            'Leather Armor':this.chanceCurve(1,8),
-            'Chainmail Armor':this.chanceCurve(4,15),
-            'Plate Armor':this.chanceCurve(12,22),
-            'Dragonleather Armor':this.chanceCurve(18,26),
-            'Wand of Reach':this.chanceCurve(2,12),
-            'Wand of Retreat':this.chanceCurve(3,20),
-            'Wand of Banishing':this.chanceCurve(4,26),
+            'Parka':0.5*this.chanceCurve(2,5),
+            'Leather Armor':0.5*this.chanceCurve(1,8),
+            'Chainmail Armor':0.5*this.chanceCurve(4,15),
+            'Plate Armor':0.5*this.chanceCurve(12,22),
+            'Dragonleather Armor':0.5*this.chanceCurve(18,26),
+            'Wand of Reach':0.1*this.chanceCurve(2,12),
+            'Wand of Retreat':0.1*this.chanceCurve(3,20),
+            'Wand of Banishing':0.1*this.chanceCurve(4,26),
         };
         switch (biome) {
             default:
             case 'Dungeon':
                 opts.wallColor='#ddd';
                 opts.floorColor='#999';
-                opts.tileNames=['Stone Wall','Stone Floor'];
+                opts.tileNames=['Stone Brick Wall','Flagstone Floor'];
                 opts.roomOpts=['rectRoom','tRoom','hallRoom','roundRoom'];
                 opts.features={
                     lake:0.1,
@@ -50,7 +52,7 @@ var RoomGen = {
             case 'WizardLand':
                 opts.wallColor='#d0f';
                 opts.floorColor='#96a';
-                opts.tileNames=['Azurite Wall','Stone Floor'];
+                opts.tileNames=['Azurite Wall','Flagstone Floor'];
                 opts.roomOpts=['rectRoom','tRoom','hallRoom','roundRoom'];
                 opts.features={
                     lake:0.1,
@@ -76,11 +78,11 @@ var RoomGen = {
                 opts.items={
                     'Healing Potion':this.chanceCurve(1,1),
                     'Wand of Reach':this.chanceCurve(2,12),
-                    'Wand of Retreat':this.chanceCurve(3,20),
-                    'Wand of Banishing':this.chanceCurve(4,26),
+                    'Wand of Retreat':this.chanceCurve(6,20),
+                    'Wand of Banishing':this.chanceCurve(10,26),
                 };
                 opts.names1=["Mystic","Cursed","Bewitched","Glowing","Runed","Immortal"];
-                opts.names2=["Cloister","Tower","Laboratory","Manse","Hall","Study"];
+                opts.names2=["Cloister","Tower","Laboratory","Manse","Hall","Study","Academy"];
                 //opts.floorChars=['.'];
                 break;
             case 'Cold':
@@ -110,7 +112,7 @@ var RoomGen = {
             case 'Cave':
                 opts.wallColor='#c63';
                 opts.floorColor='#b52';
-                opts.tileNames=['Stone Wall','Stone Floor'];
+                opts.tileNames=['Rock Wall','Uneven Rock Floor'];
                 opts.roomOpts=['caveRoom','roundRoom'];
                 opts.features={
                     lake:0.5,
@@ -131,7 +133,7 @@ var RoomGen = {
             case 'Hot':
                 opts.wallColor='#f31';
                 opts.floorColor='#e20';
-                opts.tileNames=['Stone Wall','Stone Floor'];
+                opts.tileNames=['Hot Stone Wall','Hot Stone Floor'];
                 opts.roomOpts=this.roomOpts;
                 opts.tags=['hot'];
                 opts.features={
@@ -145,7 +147,7 @@ var RoomGen = {
                     Salamander:this.chanceCurve(1,8),
                     Dragon:this.chanceCurve(8,18),
                     FlameDemon:this.chanceCurve(4,12),
-                    Volcano:this.chanceCurve(8,18)/10.0,
+                    Volcano:this.chanceCurve(12,26)/10.0,
                 };
                 opts.names1=["Burning","Hot","Molten","Hellish","Searing","Toasty"];
                 opts.names2=["Cavern","Place","Pit","Furnace","Oven","Broiler"];
@@ -154,7 +156,7 @@ var RoomGen = {
             case 'Jungle':
                 opts.wallColor='#0f0';
                 opts.floorColor='#0e0';
-                opts.tileNames=['Vine-covered Wall','Grassy Floor'];
+                opts.tileNames=['Vine-covered Wall','Grass Floor'];
                 opts.roomOpts=['caveRoom','roundRoom'];
                 opts.features={
                     lake:0.1,
@@ -223,6 +225,9 @@ var RoomGen = {
         let thisRoom = ROT.RNG.getItem(opts.roomOpts);
         //console.log(roomBounds);
         newWalls=this[thisRoom](k,roomSize,opts,roomBounds);
+        if ('tileNames' in opts) {
+            this.nameTiles(k,roomBounds,opts.tileNames);
+        }
         //console.log(roomBounds);
         //console.log(thisRoom+' '+roomSize+' '+k);
         this.wallDirections(newWalls);
@@ -253,14 +258,33 @@ var RoomGen = {
         }
         //console.log(opts.items);
         if (ROT.RNG.getUniform()<Math.min(0.5,(0.1 * k))) {
-            this.placeItem(roomCells,opts.items);
+            var breaker=0;
+            while (!this.placeItem(roomCells,opts.items) && breaker<20) {
+                breaker++;
+            }
+        }
+    },
+
+    nameTiles: function(k,roomBounds,nameList) {
+        for (let i=roomBounds[0]-2;i<roomBounds[2]+2;i++) {
+            for (let j=roomBounds[1]-2;j<roomBounds[3]+2;j++) {
+                let key = i+','+j+','+k;
+                if (key in Game.map) {
+                    if (Game.map[key].char == '#') {
+                        Game.map[key].name=nameList[0];
+                    }
+                    else if (Game.map[key].char == '.') {
+                        Game.map[key].name=nameList[1];
+                    }
+                }
+            }
         }
     },
 
     chanceCurve:function(level,peak) {
         var toReturn=0.0;
         var normalize=parseFloat(1+peak-level)/10.0;
-        if (Game.level < level) {
+        if (Game.level+4 < level) {
             toReturn = (parseFloat(Game.level)/level)/normalize;
         }
         else {
@@ -295,9 +319,11 @@ var RoomGen = {
 
     placeItem: function(roomCells,list) {
         let index = Math.floor(ROT.RNG.getUniform()*roomCells.length);
-        if (Game.map[roomCells[index]].contains==null) {
+        if (roomCells[index] in Game.map && Game.map[roomCells[index]].contains==null) {
             Game.map[roomCells[index]].contains = ItemBuilder.itemByName(ROT.RNG.getWeightedValue(list));
+            return true;
         }
+        return false;
     },
 
     rectRoom:function(k,roomSize,opts,roomBounds) {
