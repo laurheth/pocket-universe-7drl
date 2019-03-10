@@ -252,24 +252,26 @@ var RoomGen = {
         }
 
         if (Game.level>25) {
-            biomeList.WizardLand *= 2;
+            Game.statusMessage("You've made it to the Inner Sanctum! The wand of Nerual is here; you can feel it!");
+            biomeList.WizardLand *= 3;
             biomeList.Swamp /= 2;
             biomeList.Jungle /= 2;
         }
         else if (Game.level == 15) {
-            biomeList.Dungeon *= 2;
+            biomeList.Dungeon *= 3;
         }
         else if (Game.level == 20) {
-            biomeList.Hot *= 2;
-            biomeList.Cold /= 2;
+            biomeList.Hot *= 3;
+            biomeList.Cold /= 3;
         }
         else if (Game.level == 10) {
-            biomeList.Cold *= 2;
-            biomeList.Hot /= 2;
+            biomeList.Cold *= 3;
+            biomeList.Hot /= 3;
         }
         var biomeChoice=ROT.RNG.getWeightedValue(biomeList);
         var monsterProb=0.004+0.00005*Game.level;
         if (k==3 && Game.level==11) {
+            Game.sendMessage("You hear a distant quacking sound...");
             biomeChoice='DuckCave';
             monsterProb=1;
         }

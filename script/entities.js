@@ -495,7 +495,7 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
             this.chaseTimer--;
         }
 
-        if (this.onFire < 0 || !this.immuneToFire) {
+        if (this.onFire < 0 || this.immuneToFire) {
             if ('zap' in this) {
                 if ('chooseSpell' in this) {
                     this.chooseSpell();
@@ -888,7 +888,7 @@ var EntityMaker = {
             break;
             case 'Wizard':
             newThing = new Entity(x,y,z,'@','#f0f','Wizard',true);
-            ChaseMixin(newThing,'hits',2,false,true);
+            ChaseMixin(newThing,'hits',2,false,false);
             HurtByLiquidMixin(newThing,1);
             WizardMixin(newThing);
             newThing.tempHate.push('hot','cold');
@@ -922,7 +922,7 @@ var EntityMaker = {
             HurtByLiquidMixin(newThing,1);
             newThing.tempHate.push('hot');
             newThing.tempHate.push('cold');
-            newThing.yellSound="lets out a squeeky neigh";
+            newThing.yellSound="lets out a squeaky neigh";
             break;
             case 'Horse Sized Duck':
             newThing = new Entity(x,y,z,'D','#ff0','Horse-sized Duck',true);

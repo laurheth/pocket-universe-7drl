@@ -85,6 +85,10 @@ li {
     font-weight: bold;
 }
 
+.Help {
+    color: yellow;
+}
+
 #screen {
     margin: 0;
     padding: 0;

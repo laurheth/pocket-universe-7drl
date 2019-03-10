@@ -27,6 +27,7 @@ var Game = {
     targetMode: false,
     portalList:[],
     viewDist:40,
+    helpScreenOpen: false,
 
     init: function () {
         let screen = document.getElementById('screen');
@@ -48,6 +49,11 @@ var Game = {
         //this.holdPortal.innerHTML = 'Holding portal to: dungeon of despair';
         this.scheduler = new ROT.Scheduler.Simple();
         this.player = new Player(-1, -1, -1);
+
+        this.sendMessage("Welcome to the Pocket Dimensions Roguelike!",false,'','Help');
+        this.sendMessage("The world has been broken into pockets of space by a cabal of wizards, thankfully you are a portal mage and can manipulate the pathes between these pockets!",false,'','Help');
+        this.sendMessage("Reach the Inner Sanctum of the wizards and find the Wand of Nerual; only with it can the world be made whole again.",false,'','Help');
+        this.sendMessage("Press / or ? at any time for instructions on how to play.");
 
         this._generateMap();
 
@@ -511,6 +517,28 @@ var Game = {
         }
         return newKey;
     },
+    help: function() {
+        let helpText = [
+                "---How to play---",
+                "Movement:",
+                "Numpad, arrow keys, or VIM keys (hjklyubn)",
+                "'.' to wait.",
+                "Inventory:",
+                "'i' to open Inventory. 'g' to Get items.",
+                "'z' to Zap your held wand.",
+                "Portal manipulation:",
+                "'o' to Open adjacent portals. 'c' to Close them.",
+                "'a' to Acquire a portal, 'd' to Drop it",
+                "You can only hold one portal at a time.",
+                "Portals realign when you drop them.",
+                "Use this to bypass obstacles!",
+                "Other:",
+                "'x' to eXamine your surroundings."
+            ];
+        for (let i=0;i<helpText.length;i++) {
+            this.sendMessage(helpText[i],false,"",'Help');
+        }
+    }
 };
 
 // Targetting stuff, doubles for looking?
@@ -1093,6 +1121,16 @@ Player.prototype.handleEvent = function (e) {
     keyMap[103] = 7;
 
     let code = e.keyCode;
+
+    if (code==191) {
+        Game.help();
+        return;
+    }
+
+    if (Game.helpScreenOpen) {
+        return;
+    }
+
     /*if (!(code in keyMap)) {
         return;
     }*/
@@ -1161,6 +1199,12 @@ Player.prototype.handleEvent = function (e) {
             case 90:
                 if (this.wand != null && 'zap' in this.wand) {
                     success=this.wand.zap();
+                }
+                else if (this.wand != null) {
+                    Game.sendMessage("This wand doesn't zap; its effect always applies.");
+                }
+                else {
+                    Game.sendMessage("You aren't holding a wand!");
                 }
             break;
 
