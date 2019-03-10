@@ -11,12 +11,13 @@ var RoomGen = {
             'Americano':this.chanceCurve(10,18,0.95),
             'Sundae':this.chanceCurve(10,18,0.95),
             'Healing Potion':0.5*this.chanceCurve(1,6,0.99),
+            'Bucket of Water':0.3*this.chanceCurve(6,10,0.85),
             'Parka':0.5*this.chanceCurve(2,5),
             'Leather Armor':0.5*this.chanceCurve(1,8),
             'Chainmail Armor':0.5*this.chanceCurve(4,15),
             'Plate Armor':0.5*this.chanceCurve(12,22),
             'Dragonleather Armor':0.5*this.chanceCurve(18,26),
-            'Snowman Armor':0.2*this.chanceCurve(10,15,0.95),
+            'Snowman Armor':0.2*this.chanceCurve(12,15,0.95),
             'Wand of Reach':0.1*this.chanceCurve(2,26),
             'Wand of Retreat':0.1*this.chanceCurve(3,26),
             'Wand of Banishing':0.1*this.chanceCurve(4,26),
@@ -382,27 +383,27 @@ var RoomGen = {
         }
         var biomeChoice=ROT.RNG.getWeightedValue(biomeList);
         var monsterProb=0.004+0.00005*Game.level;
-        if (k==3 && Game.level==5) {
+        if (k==4 && Game.level==5) {
             Game.sendMessage("You hear a distant quacking sound...");
             biomeChoice='DuckCave';
             monsterProb=1;
         }
-        else if (k==3 && Game.level==20) {
+        else if (k==4 && Game.level==20) {
             Game.sendMessage("There are moose tracks everywhere here!");
             biomeChoice='MooseCave';
             monsterProb=1;
         }
-        else if (k==3 && Game.level==15) {
+        else if (k==4 && Game.level==15) {
             Game.sendMessage("The walls here have a thin layer of glitter...");
             biomeChoice='TwinkleZone';
             monsterProb=1;
         }
-        else if (k==3 && Game.level==10) {
+        else if (k==4 && Game.level==10) {
             Game.sendMessage("This whole area is billowing with smoke.");
             biomeChoice='DemonDen';
             monsterProb=1;
         }
-        else if (k==3 && Game.level==26) {
+        else if (k==4 && Game.level==26) {
             //Game.sendMessage("There are moose tracks everywhere here!");
             biomeChoice='WizardLand_super';
             monsterProb=1;

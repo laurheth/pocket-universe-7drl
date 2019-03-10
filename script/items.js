@@ -136,11 +136,13 @@ var ItemBuilder = {
             case 'Americano':
                 return new Item(name,'u','#fcf',{Bleeding:2,Hypothermia:100,Burning:3,Overheating:-15},'Hot, the way you like it.','A hot americano! You need the kick right about now.',1,'drink',2);
             case 'Icecream':
-                return new Item(name,'\u2200','#faf',{Bleeding:3,Overheating:50, Hypothermia:-10,Burning:3},'A cold snack.','An ice cream cone! Wow, so refreshing!',1,'eat',1);
+                return new Item(name,'\u2200','#faf',{Bleeding:3,Overheating:50, Hypothermia:-10},'A cold snack.','An ice cream cone! Wow, so refreshing!',1,'eat',1);
             case 'Sundae':
-                return new Item(name,'\u2200','#f4f',{Bleeding:3,Overheating:100, Hypothermia:-15,Burning:3},'With chocolate!','An ice cream sundae! Incredible.',1,'eat',1);
+                return new Item(name,'\u2200','#f4f',{Bleeding:3,Overheating:100, Hypothermia:-15},'With chocolate!','An ice cream sundae! Incredible.',1,'eat',1);
             case 'Healing Potion':
                 return new Item(name,'+','#0f0',{Bleeding:20,Poison:100},'Heals the body.','A glowing green concoction to make you healthy.',1,'drink',1);
+            case 'Bucket of Water':
+                return new Item(name,'U','#ccc',{Water:2.5*Game.deepThreshold},"It's full of water!",'A bucket of water; might come in handy?',1,'dump',3);
             case 'Parka':
                 return new Item(name,'[','#ddf',{Bleeding:0,Hypothermia:2},'Protects from the cold.','A big toasty parka. Not much use in a fight though.',100,'wear','Armor',10);
             case 'Leather Armor':
@@ -200,6 +202,9 @@ function Item(name, char, color, effects,shortDescription,longDescription,uses=1
             else {
                 Game.sendMessage("Your "+this.name+" was destroyed by the fire!");
             }
+            if ('Water' in this.effects) {
+                this.use(false);
+            }
             for (let i = 0; i < Game.player.inventory.length; i++) {
                 if (Game.player.inventory[i] == this) {
                     Game.player.inventory.splice(i, 1);
@@ -213,7 +218,7 @@ function Item(name, char, color, effects,shortDescription,longDescription,uses=1
             }
         }
     }
-    this.use = function() {
+    this.use = function(intentional=true) {
         if (this.uses<0) {
             return;
         }
@@ -240,20 +245,24 @@ function Item(name, char, color, effects,shortDescription,longDescription,uses=1
             }
         }
         else {
-            Game.sendMessage("You " + this.verb + " the " + this.name + ".");
+            if (intentional) {
+                Game.sendMessage("You " + this.verb + " the " + this.name + ".");
+            }
             let fx = Object.keys(this.effects);
             for (let i = 0; i < fx.length; i++) {
                 // Apply effects to player
-                if (fx[i] in Game.player.status) {
-                    var effectIndex = (this.effects[fx[i]] >= 0) ? 0 : 1;
-                    Game.player.status[fx[i]] += this.effects[fx[i]];
-                    if (this.effects[fx[i]] != 0) {
-                        if (fx[i] == 'Burning') {
-                            delete Game.player.status.Burning;
-                            Game.sendMessage(UseMessages.Burning[effectIndex] + this.name + "!");
-                        }
-                        else {
-                            Game.sendMessage(UseMessages[fx[i]][effectIndex]);
+                if (intentional) {
+                    if (fx[i] in Game.player.status) {
+                        var effectIndex = (this.effects[fx[i]] >= 0) ? 0 : 1;
+                        Game.player.status[fx[i]] += this.effects[fx[i]];
+                        if (this.effects[fx[i]] != 0) {
+                            if (fx[i] == 'Burning') {
+                                delete Game.player.status.Burning;
+                                Game.sendMessage(UseMessages.Burning[effectIndex] + this.name + "!");
+                            }
+                            else {
+                                Game.sendMessage(UseMessages[fx[i]][effectIndex]);
+                            }
                         }
                     }
                 }
@@ -266,6 +275,27 @@ function Item(name, char, color, effects,shortDescription,longDescription,uses=1
                                 Game.map[testKey].entity.melt();
                             }
                         }
+                    }
+                }
+                if (fx[i] == 'Water') {
+                    if (!intentional) {
+                        Game.sendMessage("It spills at your feet!");
+                    }
+                    let waterKey=Game.player.getKey();
+                    if (Game.map[waterKey].liquid != 1 || Game.map[waterKey].water < Game.minWater) {
+                        Game.map[waterKey].water += this.effects.Water;
+                        Game.map[waterKey].nextWater += this.effects.Water;
+                        Game.map[waterKey].liquidType = 0;
+                        Game.map[waterKey].nextLiquidType = 0;
+                        Game.map[waterKey].lake = false;
+                    }
+                    else {
+                        Game.map[waterKey].water = Math.floor(this.effects.Water/2);
+                        Game.map[waterKey].nextWater = Math.floor(this.effects.Water/2);
+                        Game.map[waterKey].liquidType = 0;
+                        Game.map[waterKey].nextLiquidType = 0;
+                        Game.map[waterKey].lake = false;
+                        Game.map[waterKey].color='#666';
                     }
                 }
             }

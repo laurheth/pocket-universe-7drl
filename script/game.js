@@ -114,17 +114,21 @@ var Game = {
 
     importantFeatures: function() {
         if (this.level<26) {
-            this.scheduler.add(this.addImportant('Staircase'),true);
+            var specific=-1;
+            if (this.level % 5 == 0) {
+                specific=4;
+            }
+            this.scheduler.add(this.addImportant('Staircase',specific),true);
         }
         else {
-            this.scheduler.add(this.addImportant('VictoryChest'),true);
+            this.scheduler.add(this.addImportant('VictoryChest',4),true);
             this.scheduler.add(this._addEntity('DecoyChest'),true);
             this.scheduler.add(this._addEntity('DecoyChest'),true);
             this.scheduler.add(this._addEntity('DecoyChest'),true);
         }
     },
 
-    addImportant: function(name) {
+    addImportant: function(name,specificZ=-1) {
         var stairZ=-1;
         var attempts=0;
         var px;
@@ -138,7 +142,7 @@ var Game = {
             py = parseInt(parts[1]);
             pz = parseInt(parts[2]);
             attempts++;
-        } while ((pz == this.player.z && attempts < 5) || !this._portalPathExists(this.player.z,pz));
+        } while ((pz == this.player.z && attempts < 5) || !this._portalPathExists(this.player.z,pz) || (specificZ>=0 && pz != specificZ && attempts<15));
 
         return EntityMaker.makeByName(name,px,py,pz);
     },
