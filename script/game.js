@@ -681,7 +681,7 @@ Player.prototype.printStatus = function() {
             this.inventory[index].damage(1,true);
         }
         // Succumb to status effect
-        if (this.status[stats[i]]<0) {
+        if (this.status[stats[i]]<(Math.ceil(10*ROT.RNG.getUniform())-10)) {
             if (stats[i]=='Bleeding') {
                 Game.statusMessage('You have bled to death.','Bleeding');
             }
