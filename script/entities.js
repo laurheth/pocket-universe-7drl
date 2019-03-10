@@ -1012,6 +1012,7 @@ var EntityMaker = {
             HurtByLiquidMixin(newThing,1);
             newThing.tempHate.push('hot');
             newThing.tempHate.push('cold');
+            newThing.amphibious=true;
             newThing.yellSound="lets out a squeaky neigh";
             break;
             case 'Horse Sized Duck':

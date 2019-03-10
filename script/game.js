@@ -162,7 +162,7 @@ var Game = {
         var newPortal=null;
         var pC;
         var k=0;
-        while (this.freeCells.length < 800+(40*this.level) || k<(6+Math.log2(this.level))) { // dimension
+        while (this.freeCells.length < 1000+(30*this.level) || k<(6+Math.log2(this.level))) { // dimension
             let roomSize=[Math.floor((12+Math.sqrt(this.level))*ROT.RNG.getUniform())+6,Math.floor((12+Math.sqrt(this.level))*ROT.RNG.getUniform())+6];
             if (k>0 && this.walls.length>0) {
                 let index = Math.floor(ROT.RNG.getUniform() * this.walls.length);
@@ -274,12 +274,26 @@ var Game = {
             this.player.x = px;
             this.player.y = py;
             this.player.z = pz;
-            if (pz!=3) {
+            if (pz!=4) {
                 break;
             }
         }
+        // make immediate vicinity of player safe-ish
+        let safeRad = 3 + Math.max(Math.floor(10-this.level/2),0);
         this.map[key].entity = this.player;
-        
+        for (let i=-safeRad;i<=safeRad;i++) {
+            for (let j=-safeRad;j<=safeRad;j++) {
+                if ((Math.max(Math.abs(i),Math.abs(j))+0.5*Math.min(Math.abs(i),Math.abs(j)))>safeRad) {
+                    continue;
+                }
+                let safeKey = (this.player.x+i)+','+(this.player.y+j)+','+this.player.z;
+                if (safeKey in Game.map && Game.map[safeKey].entity != null && Game.map[safeKey].entity != this.player && Game.map[safeKey].entity.violent) {
+                    Game.map[safeKey].entity.active=false;
+                    Game.map[safeKey].entity=null;
+                    //console.log('Removed something');
+                }
+            }
+        }
 
         //this._addEntity();  
     },
