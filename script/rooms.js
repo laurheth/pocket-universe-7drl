@@ -8,15 +8,15 @@ var RoomGen = {
         opts.items={
             'Coffee':this.chanceCurve(1,1),
             'Icecream':this.chanceCurve(1,1),
-            'Americano':this.chanceCurve(10,18),
-            'Sundae':this.chanceCurve(10,18),
-            'Healing Potion':this.chanceCurve(1,6),
+            'Americano':this.chanceCurve(10,18,0.95),
+            'Sundae':this.chanceCurve(10,18,0.95),
+            'Healing Potion':0.5*this.chanceCurve(1,6,0.99),
             'Parka':0.5*this.chanceCurve(2,5),
             'Leather Armor':0.5*this.chanceCurve(1,8),
             'Chainmail Armor':0.5*this.chanceCurve(4,15),
             'Plate Armor':0.5*this.chanceCurve(12,22),
             'Dragonleather Armor':0.5*this.chanceCurve(18,26),
-            'Snowman Armor':0.2*this.chanceCurve(10,15),
+            'Snowman Armor':0.2*this.chanceCurve(10,15,0.95),
             'Wand of Reach':0.1*this.chanceCurve(2,26),
             'Wand of Retreat':0.1*this.chanceCurve(3,26),
             'Wand of Banishing':0.1*this.chanceCurve(4,26),
@@ -37,7 +37,7 @@ var RoomGen = {
                 };
                 opts.monsters={
                     Goblin:this.chanceCurve(1,1),
-                    Dragon:0.5*this.chanceCurve(10,16),
+                    Dragon:0.5*this.chanceCurve(10,16,0.95),
                     Gargoyle:this.chanceCurve(3,10),
                     BronzeGolem:this.chanceCurve(6,18),
                     Snail:this.chanceCurve(1,3),
@@ -68,7 +68,7 @@ var RoomGen = {
                     Dragon:this.chanceCurve(12,18),
                     Gargoyle:this.chanceCurve(3,10),
                     BronzeGolem:this.chanceCurve(6,18),
-                    Moosetaur:this.chanceCurve(8,18),
+                    Moosetaur:this.chanceCurve(8,18,0.95),
                     FrostDemon:this.chanceCurve(4,12),
                     FlameDemon:this.chanceCurve(4,12),
                     Salamander:this.chanceCurve(1,8),
@@ -80,8 +80,8 @@ var RoomGen = {
                     Candelabra:2,
                 };
                 opts.items={
-                    'Healing Potion':this.chanceCurve(1,1),
-                    'Wand of Reach':this.chanceCurve(2,12),
+                    'Healing Potion':this.chanceCurve(1,1,0.98),
+                    'Wand of Reach':this.chanceCurve(2,12,0.95),
                     'Wand of Retreat':this.chanceCurve(6,20),
                     'Wand of Banishing':this.chanceCurve(10,26),
                 };
@@ -103,7 +103,7 @@ var RoomGen = {
                     liquid: 0,
                 };
                 opts.monsters={
-                    FrostDemon:this.chanceCurve(4,12),
+                    FrostDemon:this.chanceCurve(4,12,0.95),
                     Penguin:2*this.chanceCurve(1,1),
                     Moose:this.chanceCurve(3,10),
                     Moosetaur:this.chanceCurve(8,18),
@@ -350,7 +350,7 @@ var RoomGen = {
         }
     },
 
-    chanceCurve:function(level,peak) {
+    chanceCurve:function(level,peak,tail=0.9) {
         var toReturn=0.0;
         var normalize=parseFloat(1+peak-level)/10.0;
         if (Game.level+5 < level) {
@@ -363,7 +363,10 @@ var RoomGen = {
             var toReturn;
             toReturn = Math.min(parseFloat(1+Game.level-level)/normalize,10);
             if (Game.level>peak) {
-                toReturn /= Math.abs(1+Game.level-peak);
+                for (let i=peak;i<Game.level;i++) {
+                    toReturn *= tail;
+                }
+                //toReturn /= Math.abs(1+Game.level-peak);
             }
             //return toReturn;
         }
