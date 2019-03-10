@@ -26,6 +26,7 @@ var Game = {
     level: 1,
     targetMode: false,
     portalList:[],
+    viewDist:40,
 
     init: function () {
         let screen = document.getElementById('screen');
@@ -35,6 +36,8 @@ var Game = {
         this.display.setOptions({width: setsize[0],height: setsize[1]});
         this.offset[0] = parseInt(setsize[0]/2);
         this.offset[1] = parseInt(setsize[1]/2);
+
+        this.viewDist = Math.ceil(Math.sqrt(this.offset[0]*this.offset[0] + this.offset[1]*this.offset[1]))+1;
         //console.log(fontsize);
         screen.appendChild(this.display.getContainer());
         this.playerName = document.getElementById('playerName');
@@ -387,7 +390,7 @@ var Game = {
         /*if (!secondPass) {
             Game.display.clear();
         }*/
-        this.fov.compute(this.player.x, this.player.y, 50, function (x, y, r, visibility) {
+        this.fov.compute(this.player.x, this.player.y, this.viewDist, function (x, y, r, visibility) {
             let key = x + ',' + y + ',' + Game.player.z;
             if (key in Game.map) {
                 if (secondPass==false) {
@@ -433,7 +436,7 @@ var Game = {
                 }
             }
         }
-        this.portalFov.compute(this.player.x - this.delta[0], this.player.y - this.delta[1], 50, function (x, y, r, visibility) {
+        this.portalFov.compute(this.player.x - this.delta[0], this.player.y - this.delta[1], this.viewDist, function (x, y, r, visibility) {
             let key = x + ',' + y + ',' + Game.portalFovZ;
             if (key in Game.map) {
                 Game.display.draw(x - Game.player.x + Game.offset[0] + Game.delta[0], y - Game.player.y + Game.offset[1] + Game.delta[1], Game.map[key].getChar(), Game.map[key].getColor());
