@@ -36,8 +36,10 @@ function Entity (x,y,z,char,color,name, lightPasses=true) {
 };
 
 Entity.prototype.getChar = function() {
-    if (!this.seen && this.violent) {
-        Game.sendMessage(this.getName(true)+" "+this.yellSound+"!");
+    if (!this.seen) {
+        if (this.violent) {
+            Game.sendMessage(this.getName(true)+" "+this.yellSound+"!");
+        }
         this.seen=true;
     }
     if (this.z != Game.player.z) {
@@ -221,7 +223,10 @@ Entity.prototype.common = function() {
 
 var StairMixin = function(obj) {
     obj.act = function() {
-
+        if (this.seen && !('stairSpotted' in this)) {
+            this.stairSpotted=true;
+            Game.statusMessage("You found the stairway down!",'Help');
+        }
     };
     obj.actOn = function(direction) {
         Game.sendMessage("You walk down the stairs...");
@@ -1080,7 +1085,7 @@ var EntityMaker = {
             break;
             case 'Creeping Vine':
             newThing = new Entity(x,y,z,'f','#0f0','Creeping Vine',true);
-            GrowMixin(newThing,0.1);
+            GrowMixin(newThing,0.03);
             DestructMixin(newThing,"cut down");
             HurtByLiquidMixin(newThing,1);
             newThing.tempHate.push('cold');
