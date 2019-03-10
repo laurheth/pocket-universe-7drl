@@ -23,7 +23,7 @@ var Game = {
     lastMessage: [""],
     roomNames:[],
     roomTags:{},
-    level: 1,
+    level: 20,
     targetMode: false,
     portalList:[],
     viewDist:40,
@@ -279,7 +279,7 @@ var Game = {
             }
         }
         // make immediate vicinity of player safe-ish
-        let safeRad = 3 + Math.max(Math.floor(10-this.level/2),0);
+        let safeRad = 6;//3 + Math.max(Math.floor(10-this.level/2),0);
         this.map[key].entity = this.player;
         for (let i=-safeRad;i<=safeRad;i++) {
             for (let j=-safeRad;j<=safeRad;j++) {
@@ -287,7 +287,7 @@ var Game = {
                     continue;
                 }
                 let safeKey = (this.player.x+i)+','+(this.player.y+j)+','+this.player.z;
-                if (safeKey in Game.map && Game.map[safeKey].entity != null && Game.map[safeKey].entity != this.player && Game.map[safeKey].entity.violent) {
+                if (safeKey in Game.map && Game.map[safeKey].entity != null && Game.map[safeKey].entity != this.player && (Game.map[safeKey].entity.violent || Game.map[safeKey].entity.name=="Ice")) {
                     Game.map[safeKey].entity.active=false;
                     Game.map[safeKey].entity=null;
                     //console.log('Removed something');
