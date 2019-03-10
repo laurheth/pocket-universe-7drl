@@ -865,6 +865,9 @@ Player.prototype.openPortal = function(openClose) {
         for (let j=-1;j<2;j++) {
             let testKey=(this.x+i)+','+(this.y+j)+','+this.z;
             if (testKey in Game.map && Game.map[testKey].contains != null && Game.map[testKey].contains instanceof Connection && Game.map[testKey].contains.open != openClose) {
+                if ((Game.map[Game.map[testKey].contains.getKey(0)].entity != null) || (Game.map[Game.map[testKey].contains.getKey(1)].entity != null)) {
+                    continue;
+                }
                 Game.map[testKey].contains.open = openClose;
                 success=true;
             }
