@@ -138,9 +138,9 @@ var ItemBuilder = {
         switch(name) {
             default:
             case 'Coffee':
-                return new Item(name,'u','#fff',{Bleeding:2,Hypothermia:50,Burning:3,Overheating:-10},'Warm, refreshing drink.','A hot cup of coffee! Warms the body, soothes the soul.',1,'drink',2);
+                return new Item(name,'u','#fff',{Bleeding:2,Hypothermia:50,Burning:3,Overheating:-10},'Warm, refreshing drink.','A hot cup of coffee! Warms the body, and your general surroundings.',1,'drink',2);
             case 'Americano':
-                return new Item(name,'u','#fcf',{Bleeding:2,Hypothermia:100,Burning:3,Overheating:-15},'Hot, the way you like it.','A hot americano! You need the kick right about now.',1,'drink',2);
+                return new Item(name,'u','#fcf',{Bleeding:2,Hypothermia:100,Burning:3,Overheating:-15},'Hot, the way you like it.','A delicious espresso beverage. Hot enough to melt metal, just the way you like it.',1,'drink',2);
             case 'Icecream':
                 return new Item(name,'\u2200','#faf',{Bleeding:3,Overheating:50, Hypothermia:-10},'A cold snack.','An ice cream cone! Wow, so refreshing!',1,'eat',1);
             case 'Sundae':
@@ -150,7 +150,7 @@ var ItemBuilder = {
             case 'Bucket of Water':
                 return new Item(name,'U','#ccc',{Water:2.5*Game.deepThreshold},"It's full of water!",'A bucket of water; might come in handy?',1,'dump',3);
             case 'Parka':
-                return new Item(name,'[','#ddf',{Bleeding:0,Hypothermia:2},'Protects from the cold.','A big toasty parka. Not much use in a fight though.',100,'wear','Armor',10);
+                return new Item(name,'[','#ddf',{Bleeding:1,Hypothermia:2},'Protects from the cold.','A big toasty parka. Not much use in a fight though.',100,'wear','Armor',5);
             case 'Leather Armor':
                 return new Item(name,'[','#f90',{Bleeding:1,Hypothermia:10},'Light armor.','Basic armor made from hardenned leather.',100,'wear','Armor',10);
             case 'Chainmail Armor':
