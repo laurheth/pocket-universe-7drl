@@ -363,16 +363,30 @@ var Game = {
         }
     },
 
+    _drawLastSeen: function() {
+        this.display.clear();
+        let z=this.player.z;
+        for (let i=-this.offset[0]-1;i<=this.offset[0]+1;i++) {
+            for (let j=-this.offset[1]-1;j<=this.offset[1]+1;j++) {
+                let key = (i+this.player.x)+','+(j+this.player.y)+','+z;
+                if (key in this.map) {
+                    this.display.draw(i+this.offset[0],j+this.offset[1],Game.map[key].lastSeenChar,'#444');
+                }
+            }
+        }
+    },
+
     _drawVisible: function() {
+        this._drawLastSeen();
         this.__drawVisible(false); // first pass includes portals
         this.__drawVisible(true); // second only the main room, overwriting weirdness
         this.portalFovPortal=null;
     },
 
     __drawVisible: function (secondPass) {
-        if (!secondPass) {
+        /*if (!secondPass) {
             Game.display.clear();
-        }
+        }*/
         this.fov.compute(this.player.x, this.player.y, 50, function (x, y, r, visibility) {
             let key = x + ',' + y + ',' + Game.player.z;
             if (key in Game.map) {
@@ -1613,6 +1627,7 @@ function Tile(char,color,passable,seethrough,contains,direction,water=0,liquidTy
     this.solidify=false;
     this.lastSeen=-10;
     this.lake=lake;
+    this.lastSeenChar=' ';
     this.setDirection=function(newDir) {
         //console.log("Setting to")
         this.direction=newDir;
@@ -1658,27 +1673,28 @@ function Tile(char,color,passable,seethrough,contains,direction,water=0,liquidTy
     this.getChar=function() {
         this.lastSeen=Game.currentTurn;
         if (this.entity != null) {
-            return this.entity.getChar();
+            this.lastSeenChar= this.entity.getChar();
         }
-        if (this.contains == null) {
+        else if (this.contains == null) {
             //if (this.direction >= 0) {
             //    return String(this.direction);
             //}
             if (this.water < Game.minWater) {
-                return this.char;
+                this.lastSeenChar= this.char;
             }
             else {
                 if (this.water < 4*Game.minWater && !this.lake) {
-                    return '~';//String(Math.min(parseInt(this.water/Game.minWater),9));
+                    this.lastSeenChar = '~';//String(Math.min(parseInt(this.water/Game.minWater),9));
                 }
                 else {
-                    return '\u2248';
+                    this.lastSeenChar = '\u2248';
                 }
             }
         }
         else {
-            return this.contains.getChar();
+            this.lastSeenChar = this.contains.getChar();
         }
+        return this.lastSeenChar;
     }
     this.getColor=function() {
         if (this.entity != null) {

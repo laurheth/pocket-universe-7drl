@@ -77,6 +77,7 @@ var Animator={
         }
         else {
             Animator.running=false;
+            Game._drawLastSeen();
             Game._drawVisible();
         }
     },

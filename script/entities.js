@@ -932,7 +932,7 @@ var EntityMaker = {
             newThing.tempHate.push('cold');
             newThing.amphibious=true;
             newThing.relentless=true;
-            newThing.yellSound="bellowing quack";
+            newThing.yellSound="lets out a bellowing quack";
             break;
             case 'PolarBear':
             newThing = new Entity(x,y,z,'B','#ddd','Polar Bear',true);
