@@ -23,7 +23,7 @@ var Game = {
     lastMessage: [""],
     roomNames:[],
     roomTags:{},
-    level: 1,
+    level: 26,
     targetMode: false,
     portalList:[],
     viewDist:40,
@@ -493,12 +493,13 @@ var Game = {
     sendToZ: function (sendToZ) {
         var newKey = null;
         var breaker = 0;
-
-        while (breaker < 100 && !newKey) {
-            breaker++;
+        let sx=Math.floor(20*ROT.RNG.getUniform());
+        let sy=Math.floor(20*ROT.RNG.getUniform());
+        while (breaker < 200 && !newKey) {
             for (let i = -breaker; i <= breaker; i++) {
                 for (let j = -breaker; j <= breaker; j++) {
-                    let testKey = i + ',' + j + ',' + sendToZ;
+                    if (Math.abs(i)+Math.abs(j) != breaker) {continue;}
+                    let testKey = (sx+i) + ',' + (sy+j) + ',' + sendToZ;
                     if (testKey in Game.map && Game.map[testKey].entity == null && Game.map[testKey].passThrough()) {
                         newKey = testKey;
                         break;
@@ -506,6 +507,7 @@ var Game = {
                 }
                 if (newKey != null) { break; }
             }
+            breaker++;
         }
         return newKey;
     },
