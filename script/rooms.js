@@ -37,7 +37,7 @@ var RoomGen = {
                 };
                 opts.monsters={
                     Goblin:this.chanceCurve(1,1),
-                    Dragon:0.5*this.chanceCurve(10,16,0.95),
+                    Dragon:0.5*this.chanceCurve(12,16,0.95),
                     Gargoyle:this.chanceCurve(3,10),
                     BronzeGolem:this.chanceCurve(6,18),
                     Snail:this.chanceCurve(1,3),
@@ -68,9 +68,9 @@ var RoomGen = {
                     Dragon:this.chanceCurve(12,18),
                     Gargoyle:this.chanceCurve(3,10),
                     BronzeGolem:this.chanceCurve(6,18),
-                    Moosetaur:this.chanceCurve(8,18,0.95),
+                    Moosetaur:this.chanceCurve(12,18,0.95),
                     FrostDemon:this.chanceCurve(4,12),
-                    FlameDemon:this.chanceCurve(4,12),
+                    //FlameDemon:this.chanceCurve(4,12),
                     Salamander:this.chanceCurve(1,8),
                     Wizard:this.chanceCurve(16,26),
                     'Dimensional Shambler':0.5*this.chanceCurve(14,26),
@@ -85,6 +85,37 @@ var RoomGen = {
                     'Wand of Retreat':this.chanceCurve(6,20),
                     'Wand of Banishing':this.chanceCurve(10,26),
                 };
+                opts.names1=["Mystic","Cursed","Bewitched","Glowing","Runed","Immortal"];
+                opts.names2=["Cloister","Tower","Laboratory","Manse","Hall","Study","Academy","Sanctum"];
+                //opts.floorChars=['.'];
+                break;
+            case 'WizardLand_super':
+                opts.wallColor='#f0f';
+                opts.floorColor='#060';
+                opts.tileNames=['Azurite Wall','Emerald Floor'];
+                opts.roomOpts=['rectRoom','tRoom','hallRoom','roundRoom'];
+                opts.features={
+                    lake:0.1,
+                    river: 0,
+                    entitycluster: 0,
+                    forcluster:[],
+                    liquid: 1,
+                };
+                opts.monsters={
+                    Archmage: 100,
+                };
+                opts.doodads={
+                    Statue:2,
+                    Candelabra:2,
+                    Wizard:2,
+                };
+                opts.items={
+                    'Healing Potion':this.chanceCurve(1,1,0.98),
+                    'Wand of Reach':this.chanceCurve(2,12,0.95),
+                    'Wand of Retreat':this.chanceCurve(6,20),
+                    'Wand of Banishing':this.chanceCurve(10,26),
+                };
+                opts.onlyOneMonster=true;
                 opts.names1=["Mystic","Cursed","Bewitched","Glowing","Runed","Immortal"];
                 opts.names2=["Cloister","Tower","Laboratory","Manse","Hall","Study","Academy","Sanctum"];
                 //opts.floorChars=['.'];
@@ -135,14 +166,38 @@ var RoomGen = {
                 opts.monsters={
                     FrostDemon:this.chanceCurve(4,12,0.95),
                     Penguin:2*this.chanceCurve(1,1),
-                    Moose:this.chanceCurve(3,10),
-                    Moosetaur:this.chanceCurve(8,18),
-                    PolarBear:this.chanceCurve(6,18),
+                    Moose:this.chanceCurve(6,10),
+                    Moosetaur:this.chanceCurve(14,18),
+                    PolarBear:this.chanceCurve(12,18),
                 };
                 opts.names1=["Freezing","Cold","Shivering","Numb","Frozen","Icy","Arctic","Snowy"];
                 opts.names2=["Expanse","Cavern","Land","Deathtrap"];
                 //opts.floorChars=['.'];
                 break;
+            case 'MooseCave':
+                opts.tileNames=['Ice Wall','Ice Floor'];
+                opts.wallColor='#cff';
+                opts.floorColor='#bdf';
+                opts.roomOpts=['roundRoom'];
+                opts.tags=['cold'];
+                opts.features={
+                    lake:0.3,
+                    river: 0.2,
+                    entitycluster: 1,
+                    forcluster:['Moose'],
+                    liquid: 0,
+                };
+                opts.monsters={
+                    Bullbutter:100,
+                };
+                opts.doodads={
+                    Ice:2,
+                };
+                opts.onlyOneMonster=true;
+                opts.names1=["Freezing","Cold","Shivering","Numb","Frozen","Icy","Arctic","Snowy"];
+                opts.names2=["Bellows"];
+                //opts.floorChars=['.'];
+            break;
             case 'Cave':
                 opts.wallColor='#c63';
                 opts.floorColor='#b52';
@@ -157,7 +212,7 @@ var RoomGen = {
                 };
                 opts.monsters={
                     Goblin:this.chanceCurve(1,1),
-                    Dragon:0.5*this.chanceCurve(10,20),
+                    Dragon:0.5*this.chanceCurve(12,20),
                     Snail:this.chanceCurve(1,3),
                 };
                 opts.names1=["Dark","Stoney","Deep","Echoey","Slumber","Rocky"];
@@ -200,12 +255,37 @@ var RoomGen = {
                 opts.monsters={
                     Salamander:this.chanceCurve(1,8),
                     Dragon:0.5*this.chanceCurve(12,16),
-                    LavaSnail:this.chanceCurve(8,18),
+                    LavaSnail:this.chanceCurve(10,18),
                     FlameDemon:this.chanceCurve(4,12),
                     Volcano:this.chanceCurve(16,26)/20.0,
                 };
                 opts.names1=["Burning","Hot","Molten","Hellish","Searing","Toasty"];
                 opts.names2=["Cavern","Place","Pit","Furnace","Oven","Broiler"];
+                //opts.floorChars=['.'];
+                break;
+            case 'DemonDen':
+                opts.wallColor='#f31';
+                opts.floorColor='#655';
+                opts.tileNames=['Hot Stone Wall','Ashen Floor'];
+                opts.roomOpts=this.roomOpts;
+                opts.tags=['hot'];
+                opts.features={
+                    lake:0.3,
+                    river: 0.1,
+                    entitycluster: 0.6,
+                    forcluster:['Boulder'],
+                    liquid: 1,
+                };
+                opts.monsters={
+                    Azazel:100,
+                };
+                opts.doodads={
+                    Boulder:2,
+                    Salamander:1,
+                }
+                opts.onlyOneMonster=true;
+                opts.names1=["Burning","Hot","Molten","Hellish","Searing","Toasty"];
+                opts.names2=["Throne Room"];
                 //opts.floorChars=['.'];
                 break;
             case 'Jungle':
@@ -290,24 +370,39 @@ var RoomGen = {
         else if (Game.level == 15) {
             biomeList.Dungeon *= 3;
         }
-        else if (Game.level == 20) {
+        else if (Game.level == 10) {
             biomeList.Hot *= 3;
             biomeList.Cold /= 3;
         }
-        else if (Game.level == 10) {
+        else if (Game.level == 20) {
             biomeList.Cold *= 3;
             biomeList.Hot /= 3;
         }
         var biomeChoice=ROT.RNG.getWeightedValue(biomeList);
         var monsterProb=0.004+0.00005*Game.level;
-        if (k==3 && Game.level==11) {
+        if (k==3 && Game.level==5) {
             Game.sendMessage("You hear a distant quacking sound...");
             biomeChoice='DuckCave';
             monsterProb=1;
         }
-        if (k==3 && Game.level==15) {
+        else if (k==3 && Game.level==20) {
+            Game.sendMessage("There are moose tracks everywhere here!");
+            biomeChoice='MooseCave';
+            monsterProb=1;
+        }
+        else if (k==3 && Game.level==15) {
             Game.sendMessage("The walls here have a thin layer of glitter...");
             biomeChoice='TwinkleZone';
+            monsterProb=1;
+        }
+        else if (k==3 && Game.level==10) {
+            Game.sendMessage("This whole area is billowing with smoke.");
+            biomeChoice='DemonDen';
+            monsterProb=1;
+        }
+        else if (k==3 && Game.level==26) {
+            //Game.sendMessage("There are moose tracks everywhere here!");
+            biomeChoice='WizardLand_super';
             monsterProb=1;
         }
         var opts=this.biomeOpts(biomeChoice);

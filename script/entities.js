@@ -332,12 +332,14 @@ var ShamblerMixin = function(obj) {
     }
 }
 
-var WizardMixin = function(obj,castprob) {
+var WizardMixin = function(obj,castprob,shambles=false) {
     RangeMixin(obj,1,1,10,'Bleeding',0.5);
     obj.isWizard=true;
     obj.minDist=4;
     obj.home=obj.z;
     obj.castProb=castprob;
+    obj.shambles=shambles;
+    obj.shambleCounter=80;
     obj.chooseSpell = function() {
         let spellChoice = Math.floor(4*ROT.RNG.getUniform());
         switch (spellChoice) {
@@ -402,6 +404,27 @@ var WizardMixin = function(obj,castprob) {
                     hitmsg:"You feel cold!",
                 }
             break;
+        }
+        if (this.shambles && this.z != Game.player.z) {
+            this.shambleCounter--;
+            if (this.shambleCounter < 0) {
+                this.shambleCounter = Math.floor(80 * ROT.RNG.getUniform())+50;
+                if (this.seen) {
+                    let newKey = Game.sendToZ(Game.player.z);
+                    if (newKey != null && newKey in Game.map && Game.map[newKey].entity == null && Game.map[newKey].water<Game.minWater) {
+                        Game.map[newKey].entity = this;
+                        Game.map[this.getKey()].entity = null;
+                        let parts = newKey.split(',');
+                        this.x = parseInt(parts[0]);
+                        this.y = parseInt(parts[1]);
+                        this.z = parseInt(parts[2]);
+                        Game.sendMessage(this.getName(true) + " teleports in!", true, newKey);
+                        if (this.z == Game.player.z) {
+                            Animator.dazzle(this.x, this.y, '*', ['#f0f', '#00f']);
+                        }
+                    }
+                }
+            }
         }
     }
     obj.escape = function () {
@@ -884,7 +907,7 @@ var EntityMaker = {
             break;
             case 'Gargoyle':
             newThing = new Entity(x,y,z,'G','#ccc','Gargoyle',true);
-            ChaseMixin(newThing,'attacks',3,false,true);
+            ChaseMixin(newThing,'attacks',3,false,false);
             newThing.burns=false;
             newThing.yellSound="roars";
             newThing.amphibious=true;
@@ -924,6 +947,16 @@ var EntityMaker = {
             newThing.yellSound="quacks";
             newThing.amphibious=true;
             break;
+            case 'Archmage':
+            newThing = new Entity(x,y,z,'@','#0f0','The Archmage',true);
+            ChaseMixin(newThing,'hits',3,false,false);
+            HurtByLiquidMixin(newThing,1);
+            WizardMixin(newThing,0.6,true);
+            newThing.tempHate.push('hot','cold');
+            newThing.yellSound='shouts "The wand of Nerual will never be yours!"';
+            newThing.important=true;
+            newThing.relentless=true;
+            break;
             case 'Twinkles':
             newThing = new Entity(x,y,z,'@','#fe0','Twinkles the Cave Wizard',true);
             ChaseMixin(newThing,'hits',2,false,false);
@@ -937,7 +970,7 @@ var EntityMaker = {
             newThing = new Entity(x,y,z,'@','#f0f','Wizard',true);
             ChaseMixin(newThing,'hits',2,false,false);
             HurtByLiquidMixin(newThing,1);
-            WizardMixin(newThing,0.3);
+            WizardMixin(newThing,0.4);
             newThing.tempHate.push('hot','cold');
             newThing.yellSound="mutters arcane incantations";
             break;
@@ -955,6 +988,16 @@ var EntityMaker = {
             newThing.tempHate.push('hot');
             newThing.yellSound="bellows";
             RangeMixin(newThing,0.9,1,12,'Bleeding',0.3,',','#ff0',"fires an arrow",3,"You are hit!");
+            break;
+            case 'Bullbutter':
+            newThing = new Entity(x,y,z,'M','#0ff','Bullbutter the Moosetaur',true);
+            ChaseMixin(newThing,'tramples',5,false,true);
+            HurtByLiquidMixin(newThing,1);
+            newThing.tempHate.push('hot');
+            newThing.yellSound="bellows";
+            newThing.relentless=true;
+            newThing.important=true;
+            RangeMixin(newThing,0.9,1,12,'Bleeding',0.4,',','#ff0',"fires an arrow",3,"You are hit!");
             break;
             case 'Moose':
             newThing = new Entity(x,y,z,'M','#d80','Moose',true);
@@ -996,7 +1039,21 @@ var EntityMaker = {
             HurtByLiquidMixin(newThing,0);
             newThing.immuneToFire=true;
             newThing.onFire=1;
+            newThing.amphibious=true;
             newThing.yellSound="roars with flame";
+            //newThing.tempHate.push('cold');
+            break;
+            case 'Azazel':
+            newThing = new Entity(x,y,z,'\&','#fa0','Azazel',true);
+            ChaseMixin(newThing,'claws',4,false,true);
+            HurtByLiquidMixin(newThing,0);
+            newThing.immuneToFire=true;
+            newThing.onFire=1;
+            newThing.yellSound="roars with flame";
+            newThing.amphibious=true;
+            newThing.important=true;
+            newThing.relentless=true;
+            ShamblerMixin(newThing);
             //newThing.tempHate.push('cold');
             break;
             case 'Snail':
