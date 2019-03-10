@@ -916,6 +916,24 @@ var EntityMaker = {
             newThing.tempHate.push('hot');
             newThing.yellSound="bellows";
             break;
+            case 'Duck Sized Horse':
+            newThing = new Entity(x,y,z,'h','#d80','Duck-sized Horse',true);
+            ChaseMixin(newThing,'attacks',1,false,false);
+            HurtByLiquidMixin(newThing,1);
+            newThing.tempHate.push('hot');
+            newThing.tempHate.push('cold');
+            newThing.yellSound="lets out a squeeky neigh";
+            break;
+            case 'Horse Sized Duck':
+            newThing = new Entity(x,y,z,'D','#ff0','Horse-sized Duck',true);
+            ChaseMixin(newThing,'bites',5,false,true);
+            HurtByLiquidMixin(newThing,1);
+            newThing.tempHate.push('hot');
+            newThing.tempHate.push('cold');
+            newThing.amphibious=true;
+            newThing.relentless=true;
+            newThing.yellSound="bellowing quack";
+            break;
             case 'PolarBear':
             newThing = new Entity(x,y,z,'B','#ddd','Polar Bear',true);
             ChaseMixin(newThing,'thrashes',5,false,true);

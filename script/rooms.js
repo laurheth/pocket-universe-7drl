@@ -98,7 +98,7 @@ var RoomGen = {
                 opts.features={
                     lake:0.5,
                     river: 0.3,
-                    entitycluster: 0.4,
+                    entitycluster: 0.6,
                     forcluster:['Ice'],
                     liquid: 0,
                 };
@@ -121,7 +121,7 @@ var RoomGen = {
                 opts.features={
                     lake:0.5,
                     river: 0.3,
-                    entitycluster: 0.3,
+                    entitycluster: 0.5,
                     forcluster:['Boulder'],
                     liquid: 0,
                 };
@@ -134,6 +134,26 @@ var RoomGen = {
                 opts.names2=["Cavern","Gulch","Grotto"];
                 //opts.floorChars=['.',];
                 break;
+            case 'DuckCave':
+                opts.wallColor='#c63';
+                opts.floorColor='#b52';
+                opts.tileNames=['Rock Wall','Uneven Rock Floor'];
+                opts.roomOpts=['roundRoom'];
+                opts.features={
+                    lake:0.4,
+                    river: 0.3,
+                    entitycluster: 1.0,
+                    forcluster:['Duck Sized Horse'],
+                    liquid: 0,
+                };
+                opts.monsters={
+                    'Horse Sized Duck':100,
+                };
+                opts.onlyOneMonster=true;
+                opts.names1=["Neigh","Quack"];
+                opts.names2=["Cavern","Gulch","Grotto"];
+                //opts.floorChars=['.',];
+                break;
             case 'Hot':
                 opts.wallColor='#f31';
                 opts.floorColor='#e20';
@@ -143,7 +163,7 @@ var RoomGen = {
                 opts.features={
                     lake:0.3,
                     river: 0.1,
-                    entitycluster: 0.3,
+                    entitycluster: 0.5,
                     forcluster:['Boulder'],
                     liquid: 1,
                 };
@@ -166,7 +186,7 @@ var RoomGen = {
                 opts.features={
                     lake:0.1,
                     river: 0.2,
-                    entitycluster: 0.5,
+                    entitycluster: 0.6,
                     forcluster:['Creeping Vine'],
                     liquid: 0,
                 };
@@ -188,7 +208,7 @@ var RoomGen = {
                 opts.features={
                     lake:0.8,
                     river: 0.1,
-                    entitycluster: 0.5,
+                    entitycluster: 0.6,
                     forcluster:['Reed'],
                     liquid: 0,
                 };
@@ -247,8 +267,13 @@ var RoomGen = {
             biomeList.Cold *= 2;
             biomeList.Hot /= 2;
         }
-
-        var opts=this.biomeOpts(ROT.RNG.getWeightedValue(biomeList));
+        var biomeChoice=ROT.RNG.getWeightedValue(biomeList);
+        var monsterProb=0.004+0.00005*Game.level;
+        if (k==3 && Game.level==11) {
+            biomeChoice='DuckCave';
+            monsterProb=1;
+        }
+        var opts=this.biomeOpts(biomeChoice);
         //console.log(opts.monsters);
         var roomBounds=[0,0,0,0];
         //console.log(opts);
@@ -288,13 +313,14 @@ var RoomGen = {
             }
 
             while ('entitycluster' in opts.features && opts.features.entitycluster > ROT.RNG.getUniform() && opts.features.forcluster.length>0) {
+                opts.features.entitycluster-=0.2;
                 this.addEntityCluster(k,roomBounds,ROT.RNG.getItem(opts.features.forcluster));
             }
         }
 
         // Place entities and stuff!
         var roomCells=[];
-        roomCells = this.placeEntities(k,opts.monsters,roomBounds,0.004+0.00005*Game.level);
+        roomCells = this.placeEntities(k,opts.monsters,roomBounds,monsterProb,opts.onlyOneMonster);
         if ('doodads' in opts) {
             roomCells = this.placeEntities(k,opts.doodads,roomBounds,0.05);
         }
@@ -340,15 +366,17 @@ var RoomGen = {
         return Math.round(10*toReturn);
     },
 
-    placeEntities:function(k,list,roomBounds,chance) {
+    placeEntities:function(k,list,roomBounds,chance,onlyOne=false) {
         var roomCells=[];
+        var numplaced=0;
         for (let i=roomBounds[0];i<roomBounds[2];i++) {
             for (let j=roomBounds[1];j<roomBounds[3];j++) {
                 let testKey = i+','+j+','+k;
                 if (testKey in Game.map && Game.map[testKey].passThrough() && Game.map[testKey].water<Game.minWater) {
-                    if (chance>ROT.RNG.getUniform()) {
+                    if (chance>ROT.RNG.getUniform() && (numplaced<1 || !onlyOne)) {
                         let entityName = ROT.RNG.getWeightedValue(list);
                         Game.addEntity(entityName,i,j,k);
+                        numplaced++;
                     }
                     else {
                         roomCells.push(testKey);

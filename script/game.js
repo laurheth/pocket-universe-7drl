@@ -250,16 +250,21 @@ var Game = {
                 console.log("Success!");
             }
         }
-        
-        let index = Math.floor(ROT.RNG.getUniform() * this.freeCells.length);
-        let key = this.freeCells.splice(index, 1)[0];
-        let parts = key.split(',');
-        let px = parseInt(parts[0]);
-        let py = parseInt(parts[1]);
-        let pz = parseInt(parts[2]);
-        this.player.x=px;
-        this.player.y=py;
-        this.player.z=pz;
+        var key;
+        while (1 == 1) {
+            let index = Math.floor(ROT.RNG.getUniform() * this.freeCells.length);
+            key = this.freeCells.splice(index, 1)[0];
+            let parts = key.split(',');
+            let px = parseInt(parts[0]);
+            let py = parseInt(parts[1]);
+            let pz = parseInt(parts[2]);
+            this.player.x = px;
+            this.player.y = py;
+            this.player.z = pz;
+            if (pz!=3) {
+                break;
+            }
+        }
         this.map[key].entity = this.player;
         
 
