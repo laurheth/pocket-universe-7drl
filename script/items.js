@@ -104,6 +104,12 @@ var ItemManager = {
                         Game.player.inventory.splice(this.selectedIndex,1);
                         this.selectedIndex=-1;
                         Game.sendMessage('You dropped the '+this.selected.name);
+                        if (Game.player.armor==this.selected) {
+                            Game.player.armor = null;
+                        }
+                        else if (Game.player.wand == this.selected) {
+                            Game.player.wand = null;
+                        }
                         this.selected=null;
                         this.inventoryScreen();
                         Game.player.endTurn();

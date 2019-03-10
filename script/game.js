@@ -142,7 +142,7 @@ var Game = {
             py = parseInt(parts[1]);
             pz = parseInt(parts[2]);
             attempts++;
-        } while ((pz == this.player.z && attempts < 5) || !this._portalPathExists(this.player.z,pz) || (specificZ>=0 && pz != specificZ && attempts<15));
+        } while ((pz == this.player.z && attempts < 15) || !this._portalPathExists(this.player.z,pz) || (specificZ>=0 && pz != specificZ && attempts<15));
 
         return EntityMaker.makeByName(name,px,py,pz);
     },
