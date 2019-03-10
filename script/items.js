@@ -2,18 +2,19 @@ var ItemManager = {
     open:false,
     selected:null,
     selectedIndex:-1,
-    letters:["a","b","c","d","e","f","g","h","i","j"],
+    letters:["a","b","c","d","e","f","g","h","i","j","k"],
+    codes:[65,66,67,68,69,70,71,72,73,74,75],
     inventoryScreen: function() {
         if (this.open) {
             this.open=false;
-            window.removeEventListener("keypress", this);
+            window.removeEventListener("keydown", this);
             Game._drawVisible();
             return; //already open, closed it!
         }
         this.selected=null;
         this.open=true;
         this._drawScreen();
-        window.addEventListener("keypress", this);
+        window.addEventListener("keydown", this);
     },
     _drawScreen: function() {
         Game.display.clear();
@@ -35,10 +36,10 @@ var ItemManager = {
         if (this.selected != null) {
             this.drawCentredText(2*Game.offset[1]-4,"Press [u] to use/equip the "+this.selected.name+". Press [d] to drop it.");
             this.drawCentredText(2*Game.offset[1]-6,this.selected.longDescription);
-            this.drawCentredText(2*Game.offset[1]-2,"Press [I] / [shift + i] to cancel.");
+            this.drawCentredText(2*Game.offset[1]-2,"Press [x] to cancel.");
         }
         else {
-            this.drawCentredText(2*Game.offset[1]-2,"Press [I] / [shift + i] to close.");
+            this.drawCentredText(2*Game.offset[1]-2,"Press [x] to exit.");
         }
     },
     drawCentredText: function(row, toprint) {
@@ -47,23 +48,23 @@ var ItemManager = {
     },
 
     handleEvent : function(e) {
-        let code = e.charCode;
-        let ch=String.fromCharCode(code);
+        let code = e.keyCode;
+        //let ch=String.fromCharCode(code);
         //var success=false;
         //console.log(ch);
         //console.log(this.selected);
         if (this.selected == null) {
-            switch (ch) {
+            switch (code) {
                 default:
-                    if (this.letters.indexOf(ch) >= 0) {
-                        let itemNum = this.letters.indexOf(ch);
+                    if (this.codes.indexOf(code) >= 0) {
+                        let itemNum = this.codes.indexOf(code);
                         if (itemNum >= 0 && itemNum < Game.player.inventory.length) {
                             this.selected = Game.player.inventory[itemNum];
                             this.selectedIndex = itemNum;
                         }
                     }
                     break;
-                case 'I':
+                case 88:
                     this.selected = null;
                     this.selectedIndex = -1;
                     this.inventoryScreen();
@@ -71,9 +72,8 @@ var ItemManager = {
             }
         }
         else {
-            switch (ch) {
-                case 'u':
-                case 'U':
+            switch (code) {
+                case 85:
                     if (this.selected.uses <= 1) {
                         Game.player.inventory.splice(this.selectedIndex, 1);
                     }
@@ -83,8 +83,7 @@ var ItemManager = {
                     this.inventoryScreen();
                     Game.player.endTurn();
                     return;
-                case 'd':
-                case 'D':
+                case 68:
                     var success=false;
                     var breaker=0;
                     while (!success && breaker < 20) {
@@ -114,7 +113,7 @@ var ItemManager = {
                         Game.sendMessage("There's no where available to drop it!");
                     }
                     break;
-                case 'I':
+                case 88:
                     this.selected=null;
                     this.selectedIndex=-1;
                     break;
@@ -133,15 +132,15 @@ var ItemBuilder = {
         switch(name) {
             default:
             case 'Coffee':
-                return new Item(name,'u','#fff',{Bleeding:2,Hypothermia:50,Burning:3,Overheating:-10},'Warm, refreshing drink.','A hot cup of coffee! Warms the body, soothes the soul.',2,'drink');
+                return new Item(name,'u','#fff',{Bleeding:2,Hypothermia:50,Burning:3,Overheating:-10},'Warm, refreshing drink.','A hot cup of coffee! Warms the body, soothes the soul.',1,'drink',2);
             case 'Americano':
-                return new Item(name,'u','#fcf',{Bleeding:2,Hypothermia:100,Burning:3,Overheating:-15},'Hot, the way you like it.','A hot americano! You need the kick right about now.',2,'drink');
+                return new Item(name,'u','#fcf',{Bleeding:2,Hypothermia:100,Burning:3,Overheating:-15},'Hot, the way you like it.','A hot americano! You need the kick right about now.',1,'drink',2);
             case 'Icecream':
-                return new Item(name,'\u2200','#faf',{Bleeding:3,Overheating:50, Hypothermia:-10},'A cold snack.','An ice cream cone! Wow, so refreshing!',1,'eat');
+                return new Item(name,'\u2200','#faf',{Bleeding:3,Overheating:50, Hypothermia:-10},'A cold snack.','An ice cream cone! Wow, so refreshing!',1,'eat',1);
             case 'Sundae':
-                return new Item(name,'\u2200','#f4f',{Bleeding:3,Overheating:100, Hypothermia:-15},'With chocolate!','An ice cream sundae! Incredible.',1,'eat');
+                return new Item(name,'\u2200','#f4f',{Bleeding:3,Overheating:100, Hypothermia:-15},'With chocolate!','An ice cream sundae! Incredible.',1,'eat',1);
             case 'Healing Potion':
-                return new Item(name,'+','#0f0',{Bleeding:20,Poison:50},'Heals the body.','A glowing green concoction to make you healthy.',2,'drink');
+                return new Item(name,'+','#0f0',{Bleeding:20,Poison:50},'Heals the body.','A glowing green concoction to make you healthy.',1,'drink',1);
             case 'Parka':
                 return new Item(name,'[','#ddf',{Bleeding:0,Hypothermia:2},'Protects from the cold.','A big toasty parka. Not much use in a fight though.',100,'wear','Armor',10);
             case 'Leather Armor':

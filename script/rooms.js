@@ -274,6 +274,7 @@ var RoomGen = {
             monsterProb=1;
         }
         var opts=this.biomeOpts(biomeChoice);
+        console.log(opts.items);
         //console.log(opts.monsters);
         var roomBounds=[0,0,0,0];
         //console.log(opts);
@@ -352,7 +353,10 @@ var RoomGen = {
     chanceCurve:function(level,peak) {
         var toReturn=0.0;
         var normalize=parseFloat(1+peak-level)/10.0;
-        if (Game.level+4 < level) {
+        if (Game.level+5 < level) {
+            toReturn=0;
+        }
+        else if (Game.level < level) {
             toReturn = (parseFloat(Game.level)/level)/normalize;
         }
         else {
