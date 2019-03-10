@@ -1137,7 +1137,7 @@ Player.prototype.handleEvent = function (e) {
             case 71:
                 if (this.getKey() in Game.map && Game.map[this.getKey()].contains != null && Game.map[this.getKey()].contains instanceof Item) {
                     if (this.inventory.length <10) {
-                        Game.sendMessage("Picked up the "+Game.map[this.getKey()].contains.name);
+                        Game.sendMessage("Picked up the "+Game.map[this.getKey()].contains.name+'.');
                         this.inventory.push(Game.map[this.getKey()].contains);
                         Game.map[this.getKey()].contains=null;
                         success=true;

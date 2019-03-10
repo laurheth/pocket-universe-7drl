@@ -274,7 +274,7 @@ var RoomGen = {
             monsterProb=1;
         }
         var opts=this.biomeOpts(biomeChoice);
-        console.log(opts.items);
+        console.log(opts.monsters);
         //console.log(opts.monsters);
         var roomBounds=[0,0,0,0];
         //console.log(opts);
