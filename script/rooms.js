@@ -72,7 +72,7 @@ var RoomGen = {
                     FrostDemon:this.chanceCurve(4,12),
                     FlameDemon:this.chanceCurve(4,12),
                     Salamander:this.chanceCurve(1,8),
-                    Wizard:this.chanceCurve(10,26),
+                    Wizard:this.chanceCurve(16,26),
                     'Dimensional Shambler':0.5*this.chanceCurve(14,26),
                 };
                 opts.doodads={
@@ -86,9 +86,39 @@ var RoomGen = {
                     'Wand of Banishing':this.chanceCurve(10,26),
                 };
                 opts.names1=["Mystic","Cursed","Bewitched","Glowing","Runed","Immortal"];
-                opts.names2=["Cloister","Tower","Laboratory","Manse","Hall","Study","Academy"];
+                opts.names2=["Cloister","Tower","Laboratory","Manse","Hall","Study","Academy","Sanctum"];
                 //opts.floorChars=['.'];
                 break;
+            case 'TwinkleZone':
+                opts.wallColor='#c63';
+                opts.floorColor='#b52';
+                opts.tileNames=['Rock Wall','Uneven Rock Floor'];
+                opts.roomOpts=['caveRoom'];
+                opts.features={
+                    lake:0.2,
+                    river: 0,
+                    entitycluster: 1.0,
+                    forcluster:['Goblin','Penguin','Snail'],
+                    liquid: 1,
+                };
+                opts.monsters={
+                    Twinkles:100,
+                };
+                opts.doodads={
+                    Statue:2,
+                    Candelabra:2,
+                };
+                opts.onlyOneMonster=true;
+                opts.items={
+                    'Healing Potion':this.chanceCurve(1,1,0.98),
+                    'Wand of Reach':this.chanceCurve(2,12,0.95),
+                    'Wand of Retreat':this.chanceCurve(6,20),
+                    'Wand of Banishing':this.chanceCurve(10,26),
+                };
+                opts.names1=["Mystic","Cursed","Bewitched","Glowing","Runed","Immortal"];
+                opts.names2=["Cloister","Tower","Laboratory","Manse","Hall","Study","Academy","Sanctum"];
+                //opts.floorChars=['.'];
+            break;
             case 'Cold':
                 opts.tileNames=['Ice Wall','Ice Floor'];
                 opts.wallColor='#ccf';
@@ -273,6 +303,11 @@ var RoomGen = {
         if (k==3 && Game.level==11) {
             Game.sendMessage("You hear a distant quacking sound...");
             biomeChoice='DuckCave';
+            monsterProb=1;
+        }
+        if (k==3 && Game.level==15) {
+            Game.sendMessage("The walls here have a thin layer of glitter...");
+            biomeChoice='TwinkleZone';
             monsterProb=1;
         }
         var opts=this.biomeOpts(biomeChoice);

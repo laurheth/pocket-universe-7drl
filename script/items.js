@@ -293,7 +293,7 @@ function Item(name, char, color, effects,shortDescription,longDescription,uses=1
                                     if (parseInt(parts[2]) == Game.player.z) {
                                         Animator.dazzle(parseInt(parts[0]), parseInt(parts[1]), '*', ['#00f', '#0ff']);
                                     }
-                                    Game.sendMessage("You banish the "+moveEntity.name+" to "+Game.player.heldPortal.name(-1)+"!");
+                                    Game.sendMessage("You banish "+moveEntity.getName()+" to "+Game.player.heldPortal.name(-1)+"!");
 
                                     let parts2=newKey.split(',');
                                     moveEntity.x=parseInt(parts2[0]);

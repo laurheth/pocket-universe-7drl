@@ -11,6 +11,7 @@ function Entity (x,y,z,char,color,name, lightPasses=true) {
     this.char=char;
     this.color=color;
     this.name=name;
+    this.important=false;
     this.lightPasses=lightPasses;
     this.isPlant=false;
     this.burns=true;
@@ -30,13 +31,20 @@ function Entity (x,y,z,char,color,name, lightPasses=true) {
     this.poisonous=false;
     this.spawnTurn=Game.currentTurn;
     this.relentless=false;
+    this.seenVia=null;
     Game.map[x+','+y+','+z].entity=this;
 };
 
 Entity.prototype.getChar = function() {
     if (!this.seen && this.violent) {
-        Game.sendMessage("The "+this.name.toLowerCase()+" "+this.yellSound+"!");
+        Game.sendMessage(this.getName(true)+" "+this.yellSound+"!");
         this.seen=true;
+    }
+    if (this.z != Game.player.z) {
+        this.seenVia = Game.portalFovPortal;
+    }
+    else {
+        this.seenVia=null;
     }
     return this.char;
 };
@@ -55,6 +63,20 @@ Entity.prototype.getKey = function() {
 Entity.prototype.act = function() {
     this.common();
 };
+
+Entity.prototype.getName = function (cap=false) {
+    if (this.important) {
+        return this.name;
+    }
+    else {
+        if (cap) {
+            return "The "+this.name.toLowerCase();
+        }
+        else {
+            return "the "+this.name.toLowerCase();
+        }
+    }
+}
 
 spreadFire = function(key,localOnly=false) {
     let parts = key.split(',');
@@ -134,7 +156,7 @@ Entity.prototype.common = function() {
         if (ROT.RNG.getUniform()>0.8) {
             Game.map[this.getKey()].entity = null;
             this.active = false;
-            var message = "The " + this.name.toLowerCase();
+            var message = this.getName(true);//"The " + this.name.toLowerCase();
             if (this.isPlant) {
                 Game.sendMessage(message + " withered away.", true, this.getKey());
             }
@@ -173,10 +195,10 @@ Entity.prototype.common = function() {
             Game.map[this.getKey()].color='#666';
             Game.map[this.getKey()].name='Ash';
             if (this.isPlant) {
-                Game.sendMessage("The " + this.name.toLowerCase() + " burns away.", true, this.getKey());
+                Game.sendMessage(this.getName(true) + " burns away.", true, this.getKey());
             }
             else {
-                Game.sendMessage("The " + this.name.toLowerCase() + " burns to death.", true, this.getKey());
+                Game.sendMessage(this.getName(true) + " burns to death.", true, this.getKey());
             }
             return;
         }
@@ -300,7 +322,7 @@ var ShamblerMixin = function(obj) {
                     this.x = parseInt(parts[0]);
                     this.y = parseInt(parts[1]);
                     this.z = parseInt(parts[2]);
-                    Game.sendMessage("The " + this.name.toLowerCase() + " teleports in!", true, newKey);
+                    Game.sendMessage(this.getName(true) + " teleports in!", true, newKey);
                     if (this.z == Game.player.z) {
                         Animator.dazzle(this.x, this.y, '*', ['#f0f', '#00f']);
                     }
@@ -310,11 +332,12 @@ var ShamblerMixin = function(obj) {
     }
 }
 
-var WizardMixin = function(obj) {
+var WizardMixin = function(obj,castprob) {
     RangeMixin(obj,1,1,10,'Bleeding',0.5);
     obj.isWizard=true;
     obj.minDist=4;
     obj.home=obj.z;
+    obj.castProb=castprob;
     obj.chooseSpell = function() {
         let spellChoice = Math.floor(4*ROT.RNG.getUniform());
         switch (spellChoice) {
@@ -326,7 +349,7 @@ var WizardMixin = function(obj) {
                     num:1,
                     rng:10,
                     eff:'Bleeding',
-                    freq:0.5,
+                    freq:this.castProb,
                     char:'*',
                     color:'#fff',
                     msg:'shoots a magic missile!',
@@ -341,7 +364,7 @@ var WizardMixin = function(obj) {
                     num:5,
                     rng:5,
                     eff:'Burning',
-                    freq:0.5,
+                    freq:this.castProb,
                     char:'*',
                     color:'#fa0',
                     msg:'unleases a cone of flame!',
@@ -356,7 +379,7 @@ var WizardMixin = function(obj) {
                     num:1,
                     rng:10,
                     eff:'Poison',
-                    freq:0.5,
+                    freq:this.castProb,
                     char:'*',
                     color:'#0f0',
                     msg:'fires a bolt of poison!',
@@ -371,7 +394,7 @@ var WizardMixin = function(obj) {
                     num:1,
                     rng:10,
                     eff:'Hypothermia',
-                    freq:0.5,
+                    freq:this.castProb,
                     char:'*',
                     color:'#0ff',
                     msg:'fires a ray of frost!',
@@ -388,13 +411,13 @@ var WizardMixin = function(obj) {
             Game.map[this.getKey()].entity=null;
             let parts = newKey.split(',');
             if (this.z == Game.player.z) {
-                Game.sendMessage("The "+this.name.toLowerCase()+" teleported away!",true,this.getKey());
+                Game.sendMessage(this.getName(true)+" teleported away!",true,this.getKey());
                 Animator.dazzle(this.x,this.y,'*',['#f0f','#00f']);
             }
             this.x=parseInt(parts[0]);
             this.y=parseInt(parts[1]);
             this.z=parseInt(parts[2]);
-            Game.sendMessage("The "+this.name.toLowerCase()+" appears!",true,newKey);
+            Game.sendMessage(this.getName(true)+" appears!",true,newKey);
             if (this.z == Game.player.z) {
                 Animator.dazzle(this.x,this.y,'*',['#f0f','#00f']);
             }
@@ -426,7 +449,7 @@ var RangeMixin = function(obj,accuracy,number,range,effect,frequency,character='
             return false;
         } 
         if (playerDist < this.rangedetails.rng && ROT.RNG.getUniform()<this.rangedetails.freq) {
-            Game.sendMessage("The "+this.name.toLowerCase()+" "+this.rangedetails.msg+"!");
+            Game.sendMessage(this.getName(true)+" "+this.rangedetails.msg+"!");
             success=true;
             for (let i=0;i<this.rangedetails.num;i++) {
                 var tx=Game.player.x;
@@ -444,6 +467,9 @@ var RangeMixin = function(obj,accuracy,number,range,effect,frequency,character='
                             else {
                                 Game.statusMessage(this.rangedetails.hitmsg, this.rangedetails.eff);
                                 Game.player.status[this.rangedetails.eff] = Game.startValue(this.rangedetails.eff) - this.rangedetails.dmg;
+                            }
+                            if (this.rangedetails.eff=='Poison') {
+                                Game.player.poisonTurn = Game.currentTurn;
                             }
                         }
                     }
@@ -488,6 +514,18 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
             this.targetPos=[Game.player.x,Game.player.y];
             this.chaseTimer=10;
         }
+        else if (this.seenVia != null) {
+            if (this.z == this.seenVia.zList()[0]) {
+                this.targetPos = this.seenVia.getXY(0);
+                this.chaseTimer=4;
+            }
+            else if (this.z == this.seenVia.zList()[1]) {
+                this.targetPos = this.seenVia.getXY(1);
+                this.chaseTimer=4;
+            }
+        }
+
+        this.seenVia=null;
         if (this.chaseTimer<=0 && !this.relentless) {
             this.targetPos=null;
         }
@@ -545,7 +583,7 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
             }
         }*/
         if (!this.sturdy || ROT.RNG.getUniform() > 0.5) {
-            Game.sendMessage("You push the " + this.name.toLowerCase() + " away!");
+            Game.sendMessage("You push " + this.getName() + " away!");
             this.stunned = true;
             this.step(direction[0], direction[1]);
             if (ROT.RNG.getUniform() > 0.5 && !this.sturdy) {
@@ -553,7 +591,7 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
             }
         }
         else {
-            Game.sendMessage("You try to push the " + this.name.toLowerCase() + ", but they don't budge!");
+            Game.sendMessage("You try to push " + this.getName() + ", but they don't budge!");
         }
     };
 };
@@ -562,11 +600,11 @@ var PushMixin = function(obj,failMessage=null) {
     obj.failMessage=failMessage;
     obj.actOn = function(direction) {
         if (this.step(direction[0], direction[1]) != null) {
-            Game.sendMessage("You push the "+this.name.toLowerCase()+".");
+            Game.sendMessage("You push " + this.getName()+".");
         }
         else {
             if (this.failMessage==null) {
-                Game.sendMessage("You try to push the "+this.name.toLowerCase()+". It falls apart!");
+                Game.sendMessage("You try to push "+ this.getName()+". It falls apart!");
             }
             else {
                 Game.sendMessage(this.failMessage);
@@ -630,7 +668,7 @@ var GrowMixin = function(obj,growChance) {
                 let y=parseInt(parts[1]);
                 let z=parseInt(parts[2]);
                 Game.scheduler.add(EntityMaker.makeByName(this.name,x,y,z),true);
-                Game.sendMessage("The "+this.name+" grows!",true,this.getKey());
+                Game.sendMessage(this.getName(true)+" grows!",true,this.getKey());
             }
         }
     };
@@ -641,7 +679,7 @@ var DestructMixin = function(obj,destroyMethod="destroy") {
     obj.actOn = function (direction) {
         Game.map[this.getKey()].entity=null;
         this.active=false;
-        Game.sendMessage("You "+this.destroyMethod+" the "+this.name.toLowerCase()+"!");
+        Game.sendMessage("You "+this.destroyMethod+this.getName()+"!");
     };
 };
 
@@ -655,12 +693,12 @@ var HurtByLiquidMixin = function(obj,liquidType) {
             }
             if (this.hurtByLiquidType==1 && this.burns) {
                 if (this.onFire<0) {
-                    Game.sendMessage("The "+this.name.toLowerCase()+" is burning in lava!",true,this.getKey());
+                    Game.sendMessage(this.getName(true)+" is burning in lava!",true,this.getKey());
                     this.onFire=0;
                 }
             }
             else {
-                Game.sendMessage("The "+this.name.toLowerCase()+" was destroyed by the water!",true,this.getKey());
+                Game.sendMessage(this.getName(true)+" was destroyed by the water!",true,this.getKey());
                 Game.map[this.getKey()].entity=null;
                 this.active=false;
             }
@@ -684,7 +722,7 @@ var MeltMixin = function (obj, liquidType) {
         }
         Game.map[this.getKey()].entity=null;
         this.active=false;
-        Game.sendMessage("The "+this.name.toLowerCase()+" melted.",true,this.getKey());
+        Game.sendMessage(this.getName(true)+" melted.",true,this.getKey());
     }
 }
 
@@ -698,7 +736,7 @@ Entity.prototype.step = function(dx,dy,justCheck=false,beSafe=false) {
 
     if (this.violent && newKey in Game.map && Game.map[newKey].entity != null && Game.map[newKey].entity == Game.player) {
         //Game.sendMessage("The "+this.name.toLowerCase()+" attacks you!");
-        Game.statusMessage("The "+this.name.toLowerCase()+" "+this.verb+" you!",'Bleeding');
+        Game.statusMessage(this.getName(true)+" "+this.verb+" you!",'Bleeding');
         if (this.poisonous) {
             if ('Poison' in Game.player.status) {
                 Game.player.status.Poison -= this.dmg;
@@ -886,11 +924,20 @@ var EntityMaker = {
             newThing.yellSound="quacks";
             newThing.amphibious=true;
             break;
+            case 'Twinkles':
+            newThing = new Entity(x,y,z,'@','#fe0','Twinkles the Cave Wizard',true);
+            ChaseMixin(newThing,'hits',2,false,false);
+            HurtByLiquidMixin(newThing,1);
+            WizardMixin(newThing,0.6);
+            newThing.tempHate.push('hot','cold');
+            newThing.yellSound='shouts "Tonight we spelunk in hell!"';
+            newThing.important=true;
+            break;
             case 'Wizard':
             newThing = new Entity(x,y,z,'@','#f0f','Wizard',true);
             ChaseMixin(newThing,'hits',2,false,false);
             HurtByLiquidMixin(newThing,1);
-            WizardMixin(newThing);
+            WizardMixin(newThing,0.3);
             newThing.tempHate.push('hot','cold');
             newThing.yellSound="mutters arcane incantations";
             break;

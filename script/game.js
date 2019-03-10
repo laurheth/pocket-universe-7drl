@@ -23,7 +23,7 @@ var Game = {
     lastMessage: [""],
     roomNames:[],
     roomTags:{},
-    level: 1,
+    level: 15,
     targetMode: false,
     portalList:[],
     viewDist:40,
@@ -1559,6 +1559,15 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
             Game.sendMessage("You open the portal.",false);
         }
     };
+
+    this.getXY=function(which) {
+        if (which==0) {
+            return [this.p1[0],this.p1[1]];
+        }
+        else {
+            return [this.p2[0],this.p2[1]];
+        }
+    }
 };
 
 // To update water
