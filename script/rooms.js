@@ -86,7 +86,7 @@ var RoomGen = {
                     'Wand of Banishing':this.chanceCurve(10,26),
                 };
                 opts.names1=["Mystic","Cursed","Bewitched","Glowing","Runed","Immortal"];
-                opts.names2=["Cloister","Tower","Laboratory","Manse","Hall","Study","Academy","Sanctum"];
+                opts.names2=["Cloister","Tower","Laboratory","Manse","Hall","Study","Academy"];
                 //opts.floorChars=['.'];
                 break;
             case 'WizardLand_super':
@@ -95,7 +95,7 @@ var RoomGen = {
                 opts.tileNames=['Azurite Wall','Emerald Floor'];
                 opts.roomOpts=['rectRoom','tRoom','hallRoom','roundRoom'];
                 opts.features={
-                    lake:0.1,
+                    lake:0,
                     river: 0,
                     entitycluster: 0,
                     forcluster:[],
@@ -362,7 +362,9 @@ var RoomGen = {
         }
 
         if (Game.level>25) {
-            Game.statusMessage("You've made it to the Inner Sanctum! The wand of Nerual is here; you can feel it!");
+            if (k==0) {
+                Game.statusMessage("You've made it to the Inner Sanctum! The wand of Nerual is here; you can feel it!",'Help');
+            }
             biomeList.WizardLand *= 3;
             biomeList.Swamp /= 2;
             biomeList.Jungle /= 2;
@@ -406,7 +408,7 @@ var RoomGen = {
             monsterProb=1;
         }
         var opts=this.biomeOpts(biomeChoice);
-        console.log(opts.monsters);
+        //console.log(opts.monsters);
         //console.log(opts.monsters);
         var roomBounds=[0,0,0,0];
         //console.log(opts);

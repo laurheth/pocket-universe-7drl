@@ -158,7 +158,7 @@ var Game = {
         var newPortal=null;
         var pC;
         var k=0;
-        while (this.freeCells.length < 800+(50*this.level) || k<(5+Math.sqrt(this.level))) { // dimension
+        while (this.freeCells.length < 800+(40*this.level) || k<(6+Math.log2(this.level))) { // dimension
             let roomSize=[Math.floor((12+Math.sqrt(this.level))*ROT.RNG.getUniform())+6,Math.floor((12+Math.sqrt(this.level))*ROT.RNG.getUniform())+6];
             if (k>0 && this.walls.length>0) {
                 let index = Math.floor(ROT.RNG.getUniform() * this.walls.length);
