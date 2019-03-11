@@ -257,7 +257,7 @@ var RoomGen = {
                     Salamander:this.chanceCurve(1,8),
                     Dragon:0.5*this.chanceCurve(12,16),
                     LavaSnail:this.chanceCurve(10,18),
-                    FlameDemon:this.chanceCurve(4,12),
+                    FlameDemon:this.chanceCurve(7,12),
                     Volcano:this.chanceCurve(16,26)/20.0,
                 };
                 opts.names1=["Burning","Hot","Molten","Hellish","Searing","Toasty"];

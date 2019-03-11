@@ -622,7 +622,59 @@ function Player (x, y, z) {
     this.x = x;
     this.y = y;
     this.z = z;
-    this.name = "Lauren";
+//    this.name = "Lauren";
+    var sg=new ROT.StringGenerator({order:2});
+    {
+        let names = [
+            "Alexis",
+            "Beatrice",
+            "Bonnie",
+            "Constance",
+            "Cassandra",
+            "Deborah",
+            "Diana",
+            "Emma",
+            "Evelyn",
+            "Freya",
+            "Georgia",
+            "Henrietta",
+            "Isabella",
+            "Izzy",
+            "Josephine",
+            "Karen",
+            "Kelly",
+            "Lauren",
+            "Loretta",
+            "Marnie",
+            "Marge",
+            "Nancy",
+            "Natasha",
+            "Ophelia",
+            "Priya",
+            "Quotient",
+            "Rachel",
+            "Rebecca",
+            "Sarah",
+            "Sandra",
+            "Susan",
+            "Tara",
+            "Uvula",
+            "Veronica",
+            "Velma",
+            "Wanda",
+            "Xylem",
+            "Yolanda",
+            "Zoe"
+        ];
+        for (let i=0;i<names.length;i++) {
+            sg.observe(names[i].toLowerCase());
+        }
+        do {
+            this.name=sg.generate();
+            this.name = this.name.charAt(0).toUpperCase()+this.name.slice(1)
+        } while (this.name.length < 4 || this.name.length > 20 || names.indexOf(this.name)>=0);
+        this.name += " the Portal Wizard";
+    }
     this.hurtByLiquidType=-1;
     this.alive=true;
     this.burns=true;
