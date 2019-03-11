@@ -707,7 +707,7 @@ var DestructMixin = function(obj,destroyMethod="destroy") {
     obj.actOn = function (direction) {
         Game.map[this.getKey()].entity=null;
         this.active=false;
-        Game.sendMessage("You "+this.destroyMethod+this.getName()+"!");
+        Game.sendMessage("You "+this.destroyMethod+" "+this.getName()+"!");
     };
 };
 
