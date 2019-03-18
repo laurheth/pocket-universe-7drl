@@ -167,11 +167,14 @@ Entity.prototype.common = function() {
                 return;
             }
             else {
-                if (this.tempHate[0] == 'hot') {
+                if (this.tempHate.indexOf('hot')>=0 && Game.roomTags[this.z].indexOf('hot')>=0) {
                     message += " died from the heat!";
                 }
-                else if (this.tempHate[0] == 'cold') {
+                else if (this.tempHate.indexOf('cold')>=0 && Game.roomTags[this.z].indexOf('cold')>=0) {
                     message += " froze to death!";
+                }
+                else {
+                    message += " died!";
                 }
                 Game.sendMessage(message, true, this.getKey());
 
