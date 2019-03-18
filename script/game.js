@@ -579,19 +579,22 @@ var Game = {
         var breaker = 0;
         let sx=Math.floor(20*ROT.RNG.getUniform());
         let sy=Math.floor(20*ROT.RNG.getUniform());
-        while (breaker < 200 && !newKey) {
-            for (let i = -breaker; i <= breaker; i++) {
-                for (let j = -breaker; j <= breaker; j++) {
-                    if (Math.abs(i)+Math.abs(j) != breaker) {continue;}
-                    let testKey = (sx+i) + ',' + (sy+j) + ',' + sendToZ;
-                    if (testKey in Game.map && Game.map[testKey].entity == null && Game.map[testKey].passThrough()) {
-                        newKey = testKey;
-                        break;
+        for (let i = 0; i < 2; i++) {
+            while (breaker < 200 && !newKey) {
+                for (let i = -breaker; i <= breaker; i++) {
+                    for (let j = -breaker; j <= breaker; j++) {
+                        if (Math.abs(i) + Math.abs(j) != breaker) { continue; }
+                        let testKey = (sx + i) + ',' + (sy + j) + ',' + sendToZ;
+                        if (testKey in Game.map && Game.map[testKey].entity == null && Game.map[testKey].passThrough() && (i > 0 || Game.map[testKey].water < Game.minWater)) {
+                            newKey = testKey;
+                            break;
+                        }
                     }
+                    if (newKey != null) { break; }
                 }
-                if (newKey != null) { break; }
+                breaker++;
             }
-            breaker++;
+            if (newKey != null) { break; }
         }
         return newKey;
     },
