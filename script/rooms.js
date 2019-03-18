@@ -601,13 +601,15 @@ var RoomGen = {
     },
 
     caveRoom: function(k,roomSize,opts,roomBounds) {
-        var targFree=Game.freeCells.length + roomSize[0] * roomSize[1];
+        var targFree=Game.freeCells.length + (roomSize[0]-2) * (roomSize[1]-2);
+        let maxSteps = 3*roomSize[0] * roomSize[1]
         var x=0;
         var y=0;
         var breaker=0;
         var thickness = Math.floor(ROT.RNG.getUniform()*3)+3;
         var newWalls=[];
-        while (Game.freeCells.length < targFree && breaker<100) {
+        while (Game.freeCells.length < targFree && breaker<maxSteps) {
+            //console.log("freecells: "+(targFree - Game.freeCells.length));
             breaker++;
             this.carveHall(x,y,k,thickness,opts,newWalls);
             if (x-1 < roomBounds[0]) {roomBounds[0]=x-1;}
@@ -636,7 +638,8 @@ var RoomGen = {
 
     hallRoom: function(k,roomSize,opts,roomBounds) {
         //roomBounds=[0,0,roomSize[0],roomSize[1]];
-        var targFree=Game.freeCells.length + roomSize[0] * roomSize[1];
+        var targFree=Game.freeCells.length + (roomSize[0]-2) * (roomSize[1]-2);
+        let maxSteps = 2*roomSize[0] * roomSize[1]
         var x=0;
         var y=0;
         var breaker=0;
@@ -648,7 +651,7 @@ var RoomGen = {
         var twistyness = 0.2 * (ROT.RNG.getUniform());
         var maxStraight=10;
         var numStraight=0;
-        while (Game.freeCells.length < targFree && breaker<100) {
+        while (Game.freeCells.length < targFree && breaker<maxSteps) {
             breaker++;
             this.carveHall(x,y,k,thickness,opts,newWalls);
             if (x-1 < roomBounds[0]) {roomBounds[0]=x-1;}
