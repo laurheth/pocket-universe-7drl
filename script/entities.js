@@ -580,15 +580,17 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
                 this.targetPos=null;
             }
             else {
-                this.targetDir = [0,0];//[Math.sign(-this.x + this.targetPos[0]), Math.sign(-this.y + this.targetPos[1])];
-                if (Math.abs(this.x-this.targetPos[0])>Math.abs(this.y-this.targetPos[1])) {
-                    this.targetDir = [Math.sign(-this.x + this.targetPos[0]), 0];
-                }
-                else if (Math.abs(this.x-this.targetPos[0])<Math.abs(this.y-this.targetPos[1])) {
-                    this.targetDir = [0, Math.sign(-this.y + this.targetPos[1])];
-                }
-                else {
-                    this.targetDir = [Math.sign(-this.x + this.targetPos[0]), Math.sign(-this.y + this.targetPos[1])];
+                this.targetDir = [Math.sign(-this.x + this.targetPos[0]), Math.sign(-this.y + this.targetPos[1])];
+                if (ROT.RNG.getUniform() * Math.max(Math.abs(this.targetPos[0] - this.x),Math.abs(this.targetPos[1] - this.y)) > Math.min(Math.abs(this.targetPos[0] - this.x),Math.abs(this.targetPos[1] - this.y))) {
+                    if (Math.abs(this.x - this.targetPos[0]) > Math.abs(this.y - this.targetPos[1])) {
+                        this.targetDir = [Math.sign(-this.x + this.targetPos[0]), 0];
+                    }
+                    else if (Math.abs(this.x - this.targetPos[0]) < Math.abs(this.y - this.targetPos[1])) {
+                        this.targetDir = [0, Math.sign(-this.y + this.targetPos[1])];
+                    }
+                    else {
+                        this.targetDir = [Math.sign(-this.x + this.targetPos[0]), Math.sign(-this.y + this.targetPos[1])];
+                    }
                 }
             }
         }
@@ -606,7 +608,7 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
                     if (breaker>1) {
                         this.targetDir = null;
                     }
-                    else if (this.targetDir != null) {
+                    else if (this.targetDir != null && this.targetPos != null) {
                         var best = [this.targetDir[0],this.targetDir[1],1000];
                         for (let i=-1;i<2;i++) {
                             for (let j=-1;j<2;j++) {
@@ -836,11 +838,11 @@ Entity.prototype.step = function(dx,dy,justCheck=false,beSafe=false) {
     if (((this.x+dx)+','+(this.y+dy)+','+this.z) in Game.map && Game.map[((this.x+dx)+','+(this.y+dy)+','+this.z)].passThrough() && (!beSafe || this.checkSafe(((this.x+dx)+','+(this.y+dy)+','+this.z))) ) {
         newKey=((this.x+dx)+','+(this.y+dy)+','+this.z);
     }
-    else if (((this.x+dx)+','+this.y+','+this.z) in Game.map && Game.map[((this.x+dx)+','+this.y+','+this.z)].passThrough() && (!beSafe || this.checkSafe(((this.x+dx)+','+(this.y+dy)+','+this.z)))) {
+    else if (((this.x+dx)+','+this.y+','+this.z) in Game.map && Game.map[((this.x+dx)+','+this.y+','+this.z)].passThrough() && (!beSafe || this.checkSafe(((this.x+dx)+','+(this.y)+','+this.z)))) {
         dy=0;
         newKey=((this.x+dx)+','+this.y+','+this.z);
     }
-    else if ((this.x+','+(this.y+dy)+','+this.z) in Game.map && Game.map[(this.x+','+(this.y+dy)+','+this.z)].passThrough() && (!beSafe || this.checkSafe(((this.x+dx)+','+(this.y+dy)+','+this.z)))) {
+    else if ((this.x+','+(this.y+dy)+','+this.z) in Game.map && Game.map[(this.x+','+(this.y+dy)+','+this.z)].passThrough() && (!beSafe || this.checkSafe(((this.x)+','+(this.y+dy)+','+this.z)))) {
         dx=0;
         newKey=((this.x+dx)+','+(this.y+dy)+','+this.z);
     }
@@ -892,7 +894,7 @@ Entity.prototype.checkSafe = function(testKey) {
     var result=1; // determine probability of taking the risk
     if (testKey in Game.map) {
         if (Game.map[testKey].water >= Game.minWater) {
-            if (Game.map[testKey].liquidType == this.hurtByLiquidType) {
+            if (Game.map[testKey].liquidType == this.hurtByLiquidType && !this.immuneToFire) {
                 result = 0; // don't step into lava
             }
             else if ((Game.map[testKey].water > Game.deepThreshold || Game.map[testKey].lake) && !this.aquatic && !this.amphibious) {
