@@ -61,16 +61,26 @@ var Game = {
             //return true;
             var key = x + ',' + y + ',' + Game.player.z;
             if (key in Game.map) {
-                return ((Game.map[key].lightPasses()));
+                var isPortal=false;
+                if ((x != Game.player.x || y != Game.player.y) && Game.map[key].contains != null && Game.map[key].contains instanceof Connection) {
+                    isPortal=true;
+                }
+                return ((Game.map[key].lightPasses())) && (!isPortal || def);
             }
             return def;
         }
 
         var lightPassesPortal = function (x, y) {
             //return true;
-            if (!lightPasses(x+Game.delta[0],y+Game.delta[1],true)) {
-                return false;
+            if (Game.map[Game.player.getKey()].contains == null || !(Game.map[Game.player.getKey()].contains instanceof Connection) || Math.abs(x + Game.delta[0] - Game.player.x) + Math.abs(y + Game.delta[1] - Game.player.y) > 2) {
+                let mainKey = (x + Game.delta[0]) + ',' + (y + Game.delta[1]) + ',' + Game.player.z;
+                if (mainKey in Game.map && Game.map[mainKey].lastSeen == Game.currentTurn) {
+                    return lightPasses(x + Game.delta[0], y + Game.delta[1], true)
+                }
             }
+            /*if ( && !lightPasses(x+Game.delta[0],y+Game.delta[1],true)) {
+                return false;
+            }*/
             var key = x + ',' + y + ',' + Game.portalFovZ;
             if (key in Game.map) {
                 return (Game.map[key].lightPasses());
@@ -397,7 +407,7 @@ var Game = {
             for (let j=-this.offset[1]-1;j<=this.offset[1]+1;j++) {
                 let key = (i+this.player.x)+','+(j+this.player.y)+','+z;
                 if (key in this.map) {
-                    this.display.draw(i+this.offset[0],j+this.offset[1],Game.map[key].lastSeenChar,'#444');
+                    this.display.draw(i+this.offset[0],j+this.offset[1],Game.map[key].lastSeenChar,'#333');
                 }
             }
         }
@@ -405,9 +415,55 @@ var Game = {
 
     _drawVisible: function() {
         this._drawLastSeen();
-        this.__drawVisible(false); // first pass includes portals
-        this.__drawVisible(true); // second only the main room, overwriting weirdness
+        this.__drawVisible(true); // main room online
+        this.__drawVisible(false); // add views through portals
+        //this.__drawVisible(true); // second only the main room, overwriting weirdness
+        if (Game.map[Game.player.getKey()].contains != null && Game.map[Game.player.getKey()].contains instanceof Connection) {
+            this._doorWayRender();
+        }
         this.portalFovPortal=null;
+    },
+
+    // Special case wherein players current location is inside of a portal
+    // Do one pass to determine which side of in which z-layer, then a second pass to render as appropriate
+    // only immediate neighbours
+    _doorWayRender: function() {
+        let playerKey = Game.player.getKey();
+        let thePortal = Game.map[playerKey].contains;
+        let zList = thePortal.zList();
+        if (Game.player.z == zList[1]) {
+            //let scratch = zList[0];
+            zList[1] = zList[0];
+            zList[0] = Game.player.z;
+        }
+        var sides = [[0,0,0],[0,0,0],[0,0,0]];
+        for (let i=-1;i<2;i++) {
+            for (let j=-1;j<2;j++) {
+                if ((i!=0 && j!=0) || (i==0 && j==0)) {continue;}
+                let testKey = (Game.player.x+i)+','+(Game.player.y+j)+','+Game.player.z;
+                if (!(testKey in Game.map)) {
+                    sides[i+1][j+1]=1;
+                }
+            }
+        }
+        var coords;
+        var key;
+        console.log(sides);
+        for (let i=-1;i<2;i++) {
+            for (let j=-1;j<2;j++) {
+                if (sides[1][j+1] == 1 || sides[i+1][1] == 1) {
+                    coords = thePortal.localPos(zList[1]);
+                    key = (coords[0]+i)+','+(coords[1]+j)+','+zList[1];
+                }
+                else {
+                    coords = thePortal.localPos(zList[0]);
+                    key = (coords[0]+i)+','+(coords[1]+j)+','+zList[0];
+                }
+                if (key in Game.map) {
+                    Game.display.draw(i + Game.offset[0], j + Game.offset[1], Game.map[key].getChar(), Game.map[key].getColor());
+                }
+            }
+        }
     },
 
     __drawVisible: function (secondPass) {
@@ -437,7 +493,7 @@ var Game = {
         //console.log("Draw portal called");
         this.delta = portal.getDelta();
         this.portalFovPortal = portal;
-        var portalDir;
+        //var portalDir;
         if (portal.p2[2] == portal.p1[2]) {
             if (second) {
                 this.portalFovZ = portal.p1[2];
@@ -462,6 +518,10 @@ var Game = {
         }
         this.portalFov.compute(this.player.x - this.delta[0], this.player.y - this.delta[1], this.viewDist, function (x, y, r, visibility) {
             let key = x + ',' + y + ',' + Game.portalFovZ;
+            let mainkey = (x+Game.delta[0])+','+(y+Game.delta[1])+','+Game.player.z;
+            if (mainkey in Game.map && Game.map[mainkey].lastSeen == Game.currentTurn) {
+                return;
+            }
             if (key in Game.map) {
                 Game.display.draw(x - Game.player.x + Game.offset[0] + Game.delta[0], y - Game.player.y + Game.offset[1] + Game.delta[1], Game.map[key].getChar(), Game.map[key].getColor());
             }

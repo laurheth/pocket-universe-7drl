@@ -54,7 +54,7 @@ var Animator={
         }
     },
     runAnimation() {
-        Game.__drawVisible();
+        Game._drawVisible();
         Animator.running=true;
         if (Animator.anims.length>0) {
             //let i=0;
