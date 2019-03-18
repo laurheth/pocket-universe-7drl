@@ -418,7 +418,7 @@ var Game = {
             let key = x + ',' + y + ',' + Game.player.z;
             if (key in Game.map) {
                 if (secondPass==false) {
-                    if (Game.map[key].contains != null && Game.map[key].contains instanceof Connection) {
+                    if (Game.map[key].contains != null && Game.map[key].contains instanceof Connection && Game.map[key].contains.open) {
                         if (key == Game.player.getKey() || Game.map[Game.player.getKey()].contains == null || !(Game.map[Game.player.getKey()].contains instanceof Connection)) {
                             Game._drawPortal(Game.map[key].contains);
                         }
