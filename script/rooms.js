@@ -345,8 +345,8 @@ var RoomGen = {
         //this.rectRoom(k,roomSize);
         //var biomeList=['Dungeon','Cold','Cave','Hot','Jungle','Swamp'];
         var bigroom=false;
-        if (k==0) {
-            if (ROT.RNG.getUniform()>Math.min(0.9,13/Game.level) || Game.level>25) {
+        if (k==0 || (k==1 && Game.level>10) || (k==2 && Game.level>20) || (Game.level>25)) {
+            if (ROT.RNG.getUniform()>Math.min(0.9,(k+1)*(13/(Game.level)) ) || (Game.level>25 && k==0)) {
                 roomSize[0] *= 2;
                 roomSize[1] *= 2;
                 bigroom=true;
@@ -383,6 +383,9 @@ var RoomGen = {
         }
         var biomeChoice=ROT.RNG.getWeightedValue(biomeList);
         var monsterProb=0.004+0.00005*Game.level;
+        if (bigroom) {
+            monsterProb*=0.8;
+        }
         if (k==4 && Game.level==5) {
             Game.sendMessage("You hear a distant quacking sound...");
             biomeChoice='DuckCave';
@@ -416,7 +419,7 @@ var RoomGen = {
         //var roomOpts = ['rectRoom','roundRoom','tRoom','caveRoom','hallRoom'];
         let thisRoom = ROT.RNG.getItem(opts.roomOpts);
         //console.log(roomBounds);
-        newWalls=this[thisRoom](k,roomSize,opts,roomBounds);
+        newWalls=this[thisRoom](k,roomSize,opts,roomBounds,bigroom);
         if ('tileNames' in opts) {
             this.nameTiles(k,roomBounds,opts.tileNames);
         }
@@ -424,6 +427,9 @@ var RoomGen = {
         //console.log(thisRoom+' '+roomSize+' '+k);
         this.wallDirections(newWalls);
         Game.roomNames.push("The "+ROT.RNG.getItem(opts.names1)+" "+ROT.RNG.getItem(opts.names2));
+        if (bigroom) {
+            console.log("Big room made: "+Game.roomNames[Game.roomNames.length-1]);
+        }
         Game.roomTags[k]=opts.tags;
 
         // Features
@@ -437,15 +443,16 @@ var RoomGen = {
             }
 
             if (bigroom) {
-                if ('lake' in opts.features && opts.features.lake > ROT.RNG.getUniform()) {
+                if ('lake' in opts.features && 2*opts.features.lake > ROT.RNG.getUniform()) {
                     this.addLake(k, roomBounds, opts.features.liquid);
                 }
-                else if ('river' in opts.features && opts.features.river > ROT.RNG.getUniform()) {
+                else if ('river' in opts.features && 2*opts.features.river > ROT.RNG.getUniform()) {
                     this.addRiver(k, roomBounds, opts.features.liquid);
                 }
-                while ('entitycluster' in opts.features && opts.features.entitycluster > ROT.RNG.getUniform() && opts.features.forcluster.length>0) {
-                    this.addEntityCluster(k,roomBounds,ROT.RNG.getItem(opts.features.forcluster));
-                }
+                //while ('entitycluster' in opts.features && 2*opts.features.entitycluster > ROT.RNG.getUniform() && opts.features.forcluster.length>0) {
+                    //this.addEntityCluster(k,roomBounds,ROT.RNG.getItem(opts.features.forcluster));
+                //}
+                opts.features.entitycluster *= 3;
             }
 
             while ('entitycluster' in opts.features && opts.features.entitycluster > ROT.RNG.getUniform() && opts.features.forcluster.length>0) {
@@ -458,7 +465,7 @@ var RoomGen = {
         var roomCells=[];
         roomCells = this.placeEntities(k,opts.monsters,roomBounds,monsterProb,opts.onlyOneMonster);
         if ('doodads' in opts) {
-            roomCells = this.placeEntities(k,opts.doodads,roomBounds,0.05);
+            roomCells = this.placeEntities(k,opts.doodads,roomBounds,(bigroom) ? 0.03 : 0.05);
         }
         //console.log(opts.items);
         if (ROT.RNG.getUniform()<Math.min(0.5,(0.1 * k))) {
@@ -547,7 +554,7 @@ var RoomGen = {
         return false;
     },
 
-    rectRoom:function(k,roomSize,opts,roomBounds) {
+    rectRoom:function(k,roomSize,opts,roomBounds,bigroom=false) {
         roomBounds[0]=0; roomBounds[1]=0; roomBounds[2]=roomSize[0]; roomBounds[3]=roomSize[1];
         var newWalls=[];
         for (let i = 0; i <= roomSize[0]; i++) { //x
@@ -567,7 +574,7 @@ var RoomGen = {
         return newWalls;
     },
 
-    tRoom:function(k,roomSize,opts,roomBounds) {
+    tRoom:function(k,roomSize,opts,roomBounds,bigroom=false) {
         roomBounds[0]=0; roomBounds[1]=0; roomBounds[2]=roomSize[0]; roomBounds[3]=roomSize[1];
         var newWalls=[];
         var midpoints;
@@ -600,7 +607,7 @@ var RoomGen = {
         return newWalls;
     },
 
-    caveRoom: function(k,roomSize,opts,roomBounds) {
+    caveRoom: function(k,roomSize,opts,roomBounds,bigroom=false) {
         var targFree=Game.freeCells.length + (roomSize[0]-2) * (roomSize[1]-2);
         let maxSteps = 3*roomSize[0] * roomSize[1]
         var x=0;
@@ -636,20 +643,24 @@ var RoomGen = {
         return newWalls;
     },
 
-    hallRoom: function(k,roomSize,opts,roomBounds) {
+    hallRoom: function(k,roomSize,opts,roomBounds,bigroom=false) {
         //roomBounds=[0,0,roomSize[0],roomSize[1]];
         var targFree=Game.freeCells.length + (roomSize[0]-2) * (roomSize[1]-2);
         let maxSteps = 2*roomSize[0] * roomSize[1]
         var x=0;
         var y=0;
         var breaker=0;
-        var thickness = Math.floor(ROT.RNG.getUniform()*2)+3;
+        var thickness = Math.floor(ROT.RNG.getUniform()*(2 + Math.log2(Game.level)))+3;
+        if (bigroom) {
+            //console.log("Big hall!");
+            thickness += 2;
+        }
         var newWalls=[];
         var dx=0;
         var dy=0;
         var direction=this.randOrtho();
         var twistyness = 0.2 * (ROT.RNG.getUniform());
-        var maxStraight=10;
+        var minmaxStraight=[Math.floor(2.5*thickness),Math.max(4*thickness,10)];
         var numStraight=0;
         while (Game.freeCells.length < targFree && breaker<maxSteps) {
             breaker++;
@@ -660,7 +671,7 @@ var RoomGen = {
             if (y+thickness/2+1 > roomBounds[3]) {roomBounds[3]=y+thickness/2+1;}
             x+=direction[0];
             y+=direction[1];
-            if (ROT.RNG.getUniform()<twistyness || numStraight>maxStraight) {
+            if (numStraight > minmaxStraight[0] && (ROT.RNG.getUniform()<twistyness || numStraight>minmaxStraight[1])) {
                 numStraight=0;
                 direction=this.randOrtho();
             }
@@ -712,7 +723,7 @@ var RoomGen = {
         return newWalls;
     },
 
-    roundRoom:function(k,roomSize,opts,roomBounds) {
+    roundRoom:function(k,roomSize,opts,roomBounds,bigroom=false) {
         roomBounds[0]=0; roomBounds[1]=0; roomBounds[2]=roomSize[0]; roomBounds[3]=roomSize[1];
         var newWalls=[];
         var radius=[parseInt(roomSize[0]/2),parseInt(roomSize[1]/2)];

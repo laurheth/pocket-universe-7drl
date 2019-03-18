@@ -448,7 +448,7 @@ var Game = {
         }
         var coords;
         var key;
-        console.log(sides);
+        //console.log(sides);
         for (let i=-1;i<2;i++) {
             for (let j=-1;j<2;j++) {
                 if (sides[1][j+1] == 1 || sides[i+1][1] == 1) {
