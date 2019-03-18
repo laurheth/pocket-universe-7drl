@@ -17,7 +17,7 @@ var RoomGen = {
             'Chainmail Armor':0.5*this.chanceCurve(4,15),
             'Plate Armor':0.5*this.chanceCurve(12,22),
             'Dragonleather Armor':0.5*this.chanceCurve(18,26),
-            'Snowman Armor':0.2*this.chanceCurve(12,15,0.95),
+            'Snowknight Armor':0.2*this.chanceCurve(12,15,0.95),
             'Wand of Reach':0.1*this.chanceCurve(2,26),
             'Wand of Retreat':0.1*this.chanceCurve(3,26),
             'Wand of Banishing':0.1*this.chanceCurve(4,26),

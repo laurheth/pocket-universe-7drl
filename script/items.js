@@ -159,7 +159,7 @@ var ItemBuilder = {
                 return new Item(name,'[','#0dd',{Bleeding:4},'Heavy armor.','Very protective armor. Wow!',100,'wear','Armor',40);
             case 'Dragonleather Armor':
                 return new Item(name,'[','#0f0',{Bleeding:4,Burning:3,Overheating:6},'Dragon armor.','Armor made from a dragon. Definitely unethical, but it is incredibly protective.',100,'wear','Armor',50);
-            case 'Snowman Armor':
+            case 'Snowknight Armor':
                 return new Item(name,'[','#fff',{Bleeding:2,Burning:1,Overheating:2},'Protects from fire.',"Armor designed by someone who didn't want their snowpeople to melt.",100,'wear','Armor',40);
             case 'Wand of Reach':
                 return new Item(name,'/','#ff0',{Reach:Math.max(4,Math.floor(ROT.RNG.getUniform()*Game.level))},'Extends your portal reach.','Holding this lets you acquire portals from a greater distance.',Math.floor(ROT.RNG.getUniform()*Game.level)+10,'wield','Wand',4);
