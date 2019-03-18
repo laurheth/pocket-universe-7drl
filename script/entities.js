@@ -580,7 +580,16 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
                 this.targetPos=null;
             }
             else {
-                this.targetDir = [Math.sign(-this.x + this.targetPos[0]), Math.sign(-this.y + this.targetPos[1])];
+                this.targetDir = [0,0];//[Math.sign(-this.x + this.targetPos[0]), Math.sign(-this.y + this.targetPos[1])];
+                if (Math.abs(this.x-this.targetPos[0])>Math.abs(this.y-this.targetPos[1])) {
+                    this.targetDir = [Math.sign(-this.x + this.targetPos[0]), 0];
+                }
+                else if (Math.abs(this.x-this.targetPos[0])<Math.abs(this.y-this.targetPos[1])) {
+                    this.targetDir = [0, Math.sign(-this.y + this.targetPos[1])];
+                }
+                else {
+                    this.targetDir = [Math.sign(-this.x + this.targetPos[0]), Math.sign(-this.y + this.targetPos[1])];
+                }
             }
         }
         if (this.onFire>=0 && !this.immuneToFire) {
@@ -594,7 +603,29 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
             else {
                 success = this.step(this.targetDir[0], this.targetDir[1],false,true);
                 if (!success) {
-                    this.targetDir = null;
+                    if (breaker>1) {
+                        this.targetDir = null;
+                    }
+                    else if (this.targetDir != null) {
+                        var best = [this.targetDir[0],this.targetDir[1],1000];
+                        for (let i=-1;i<2;i++) {
+                            for (let j=-1;j<2;j++) {
+                                if (i == this.targetDir[0] && j == this.targetDir[1]) {
+                                    continue;
+                                }
+                                let testKey = (this.x+i)+','+(this.y+j)+','+this.z;
+                                if (!(testKey in Game.map) || !Game.map[testKey].passThrough()) {
+                                    continue;
+                                }
+                                let distToTarget = Math.abs(this.x + i - this.targetPos[0]) + Math.abs(this.y + j - this.targetPos[1]);
+                                if (distToTarget < best[2]) {
+                                    best = [i,j,distToTarget];
+                                }
+                            }
+                        }
+                        this.targetDir[0] = best[0];
+                        this.targetDir[1] = best[1];
+                    }
                 }
             }
         }
