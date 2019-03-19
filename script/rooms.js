@@ -1,6 +1,12 @@
 var RoomGen = {
     //colors:['#f00','#ff0','#0f0','#0ff','#00f','#f0f'],
-    roomOpts:['rectRoom','roundRoom','tRoom','caveRoom','hallRoom','islandRoom'],
+    roomOpts: {
+        'rectRoom':3,
+        'roundRoom':3,
+        'tRoom':3,
+        'caveRoom':3,
+        'hallRoom':3,
+        'islandRoom':1,},
     biomeOpts:function(biome) {
         var opts={};
         opts.tags=['temperate'];
@@ -28,7 +34,12 @@ var RoomGen = {
                 opts.wallColor='#ddd';
                 opts.floorColor='#999';
                 opts.tileNames=['Stone Brick Wall','Flagstone Floor'];
-                opts.roomOpts=['rectRoom','tRoom','hallRoom','roundRoom'];
+                opts.roomOpts={
+                    'rectRoom':3,
+                    'roundRoom':1,
+                    'tRoom':3,
+                    'hallRoom':3,
+                },
                 opts.features={
                     lake:0.1,
                     river: 0,
@@ -61,7 +72,12 @@ var RoomGen = {
                 opts.wallColor='#d0f';
                 opts.floorColor='#96a';
                 opts.tileNames=['Azurite Wall','Flagstone Floor'];
-                opts.roomOpts=['rectRoom','tRoom','hallRoom','roundRoom'];
+                opts.roomOpts={
+                    'rectRoom':3,
+                    'roundRoom':3,
+                    'tRoom':3,
+                    'hallRoom':3,
+                },
                 opts.features={
                     lake:0.1,
                     river: 0,
@@ -99,7 +115,12 @@ var RoomGen = {
                 opts.wallColor='#f0f';
                 opts.floorColor='#060';
                 opts.tileNames=['Azurite Wall','Emerald Floor'];
-                opts.roomOpts=['rectRoom','tRoom','hallRoom','roundRoom'];
+                opts.roomOpts={
+                    'rectRoom':3,
+                    'roundRoom':3,
+                    'tRoom':3,
+                    'hallRoom':3,
+                },
                 opts.features={
                     lake:0,
                     river: 0,
@@ -130,7 +151,9 @@ var RoomGen = {
                 opts.wallColor='#c63';
                 opts.floorColor='#b52';
                 opts.tileNames=['Rock Wall','Uneven Rock Floor'];
-                opts.roomOpts=['caveRoom'];
+                opts.roomOpts={
+                    'caveRoom':3,
+                },
                 opts.features={
                     lake:0.2,
                     river: 0,
@@ -185,6 +208,9 @@ var RoomGen = {
                 opts.wallColor='#cff';
                 opts.floorColor='#bdf';
                 opts.roomOpts=['roundRoom'];
+                opts.roomOpts={
+                    'roundRoom':1,
+                },
                 opts.tags=['cold'];
                 opts.features={
                     lake:0.3,
@@ -208,7 +234,10 @@ var RoomGen = {
                 opts.wallColor='#c63';
                 opts.floorColor='#b52';
                 opts.tileNames=['Rock Wall','Uneven Rock Floor'];
-                opts.roomOpts=['caveRoom','roundRoom'];
+                opts.roomOpts={
+                    'caveRoom':3,
+                    'roundRoom':2,
+                },
                 opts.features={
                     lake:0.5,
                     river: 0.3,
@@ -234,7 +263,9 @@ var RoomGen = {
                 opts.wallColor='#c63';
                 opts.floorColor='#b52';
                 opts.tileNames=['Rock Wall','Uneven Rock Floor'];
-                opts.roomOpts=['roundRoom'];
+                opts.roomOpts={
+                    'roundRoom':1,
+                },
                 opts.features={
                     lake:0.4,
                     river: 0.3,
@@ -303,7 +334,11 @@ var RoomGen = {
                 opts.wallColor='#0f0';
                 opts.floorColor='#0e0';
                 opts.tileNames=['Vine-covered Wall','Grass Floor'];
-                opts.roomOpts=['caveRoom','roundRoom','islandRoom'];
+                opts.roomOpts={
+                    'caveRoom':3,
+                    'roundRoom':2,
+                    'islandRoom':1,
+                },
                 opts.features={
                     lake:0.1,
                     river: 0.2,
@@ -329,7 +364,10 @@ var RoomGen = {
                 opts.tileNames=['Vine-covered Wall','Moss Floor'];
                 opts.wallColor='#0c3';
                 opts.floorColor='#0b2';
-                opts.roomOpts=['caveRoom','roundRoom'];
+                opts.roomOpts={
+                    'caveRoom':3,
+                    'roundRoom':2,
+                },
                 opts.features={
                     lake:0.8,
                     river: 0.1,
@@ -441,8 +479,11 @@ var RoomGen = {
         //console.log(opts.monsters);
         var roomBounds=[0,0,0,0];
         //console.log(opts);
+        if (bigroom && 'islandRoom' in opts.roomOpts) {
+            opts.roomOpts.islandRoom *= 3;
+        }
         //var roomOpts = ['rectRoom','roundRoom','tRoom','caveRoom','hallRoom'];
-        let thisRoom = ROT.RNG.getItem(opts.roomOpts);
+        let thisRoom = ROT.RNG.getWeightedValue(opts.roomOpts);
         if (thisRoom == 'islandRoom') {
             if (!bigroom) {
                 opts.names2=["Isle","Islet","Cay"];
@@ -450,6 +491,8 @@ var RoomGen = {
             else {
                 opts.names2=["Island","Archipelago","Isle"];
             }
+            opts.features.lake=0;
+            opts.features.river=0;
         }
         //console.log(roomBounds);
         var newWalls=null;
@@ -650,8 +693,8 @@ var RoomGen = {
         console.log("Island created");
         var islandPlan={};
         let numsteps=4;
-        roomSize[0];
-        roomSize[1];
+        roomSize[0]*=2;
+        roomSize[1]*=2;
         roomBounds[0]=-numsteps; roomBounds[1]=-numsteps; roomBounds[2]=roomSize[0]+numsteps; roomBounds[3]=roomSize[1]+numsteps;
         var numMountains=0;
         var newWalls = [];
@@ -682,9 +725,13 @@ var RoomGen = {
             for (let i = -numsteps; i <= roomSize[0]+numsteps; i++) {
                 for (let j = -numsteps; j <= roomSize[1]+numsteps; j++) {
                     let key = i + ',' + j;
-                    if (islandPlan[key][1] > 10) {
+                    if (islandPlan[key][1] > 15) {
                         islandPlan[key][0] = 2;
                         numMountains++;
+                    }
+                    else if (islandPlan[key][1] > 10) {
+                        islandPlan[key][0] = 2;
+                        //numMountains++;
                     }
                     else if ((islandPlan[key][1] > 5)) {
                         islandPlan[key][0] = 1;
