@@ -599,6 +599,11 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
         }
         while (!success && breaker < 5) {
             breaker++;
+            if (this.aquatic && (Game.map[this.getKey()].water < Game.minWater || !Game.map[this.getKey()].lake)) {
+                success = this.step(Math.floor(ROT.RNG.getUniform() * 3) - 1, Math.floor(ROT.RNG.getUniform() * 3) - 1,false,false);
+                this.hateCounter += 2;
+                continue;
+            }
             if (this.targetDir == null) {
                 success = this.step(Math.floor(ROT.RNG.getUniform() * 3) - 1, Math.floor(ROT.RNG.getUniform() * 3) - 1,false,true);
             }
@@ -894,7 +899,7 @@ Entity.prototype.checkSafe = function(testKey) {
     var result=1; // determine probability of taking the risk
     if (testKey in Game.map) {
         if (Game.map[testKey].water >= Game.minWater) {
-            if (Game.map[testKey].liquidType == this.hurtByLiquidType && !this.immuneToFire) {
+            if (Game.map[testKey].liquidType == this.hurtByLiquidType && (!this.immuneToFire && this.hurtByLiquidType   == 1)) {
                 result = 0; // don't step into lava
             }
             else if ((Game.map[testKey].water > Game.deepThreshold || Game.map[testKey].lake) && !this.aquatic && !this.amphibious) {
@@ -925,6 +930,34 @@ var EntityMaker = {
             ChaseMixin(newThing,'attacks',2);
             HurtByLiquidMixin(newThing,1);
             newThing.tempHate.push('cold');
+            break;
+            case 'Carp':
+            newThing = new Entity(x,y,z,'c','#fa8',"Carp",true);
+            ChaseMixin(newThing,'bites','1');
+            HurtByLiquidMixin(newThing,1);
+            newThing.tempHate.push('cold');
+            newThing.aquatic = true;
+            newThing.yellSound="splashes";
+            newThing.burns=false;
+            break;
+            case 'Jellyfish':
+            newThing = new Entity(x,y,z,'J','#f00',"Jumbo Jellyfish",true);
+            ChaseMixin(newThing,'stings','3',true);
+            HurtByLiquidMixin(newThing,1);
+            newThing.tempHate.push('cold');
+            newThing.aquatic = true;
+            newThing.poisonous=true;
+            newThing.yellSound="wobbles";
+            newThing.burns=false;
+            break;
+            case 'Liopleurodon':
+            newThing = new Entity(x,y,z,'L','#aaa',"Liopleurodon",true);
+            ChaseMixin(newThing,'bites','5',false,true);
+            HurtByLiquidMixin(newThing,1);
+            newThing.tempHate.push('cold');
+            newThing.aquatic = true;
+            newThing.yellSound="roars";
+            newThing.burns=false;
             break;
             case 'Dragon':
             newThing = new Entity(x,y,z,'D','#0f0','Dragon',true);

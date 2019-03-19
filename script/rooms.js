@@ -44,6 +44,11 @@ var RoomGen = {
                     Snail:this.chanceCurve(1,3),
                     Wizard:this.chanceCurve(14,18),
                 };
+                opts.aquatic = {
+                    Carp:this.chanceCurve(1,10),
+                    Jellyfish:this.chanceCurve(10,16,0.95),
+                    Liopleurodon:0.5*this.chanceCurve(20,26),
+                };
                 opts.doodads={
                     Statue:2,
                     Candelabra:2,
@@ -216,6 +221,11 @@ var RoomGen = {
                     Dragon:0.5*this.chanceCurve(12,20),
                     Snail:this.chanceCurve(1,3),
                 };
+                opts.aquatic = {
+                    Carp:this.chanceCurve(1,10),
+                    Jellyfish:this.chanceCurve(10,16,0.95),
+                    Liopleurodon:0.5*this.chanceCurve(20,26),
+                };
                 opts.names1=["Dark","Stoney","Deep","Echoey","Slumber","Rocky"];
                 opts.names2=["Cavern","Gulch","Grotto"];
                 //opts.floorChars=['.',];
@@ -305,6 +315,10 @@ var RoomGen = {
                     Snake:10,
                     Snail:10,
                 };
+                opts.aquatic = {
+                    Carp:this.chanceCurve(1,10),
+                    Jellyfish:this.chanceCurve(10,16,0.95),
+                };
                 opts.doodads={
                     "Creeping Vine":10,
                 };
@@ -327,6 +341,10 @@ var RoomGen = {
                     Snake:this.chanceCurve(1,1),
                     Snail:this.chanceCurve(1,3),
                     Fountain:this.chanceCurve(1,3)/10.0,
+                };
+                opts.aquatic = {
+                    Carp:this.chanceCurve(1,10),
+                    Jellyfish:this.chanceCurve(10,16,0.95),
                 };
                 opts.doodads={
                     Reed:10,
@@ -464,6 +482,9 @@ var RoomGen = {
         // Place entities and stuff!
         var roomCells=[];
         roomCells = this.placeEntities(k,opts.monsters,roomBounds,monsterProb,opts.onlyOneMonster);
+        if ('aquatic' in opts) {
+            roomCells = this.placeEntities(k,opts.aquatic,roomBounds,2*monsterProb,false,true);
+        }
         if ('doodads' in opts) {
             roomCells = this.placeEntities(k,opts.doodads,roomBounds,(bigroom) ? 0.03 : 0.05);
         }
@@ -515,13 +536,13 @@ var RoomGen = {
         return Math.round(10*toReturn);
     },
 
-    placeEntities:function(k,list,roomBounds,chance,onlyOne=false) {
+    placeEntities:function(k,list,roomBounds,chance,onlyOne=false,aquatic=false) {
         var roomCells=[];
         var numplaced=0;
         for (let i=roomBounds[0];i<roomBounds[2];i++) {
             for (let j=roomBounds[1];j<roomBounds[3];j++) {
                 let testKey = i+','+j+','+k;
-                if (testKey in Game.map && Game.map[testKey].passThrough() && Game.map[testKey].water<Game.minWater) {
+                if (testKey in Game.map && Game.map[testKey].passThrough() && ((!aquatic && Game.map[testKey].water<Game.minWater) || (aquatic && Game.map[testKey].lake) )) {
                     if (chance>ROT.RNG.getUniform() && (numplaced<1 || !onlyOne)) {
                         let entityName = ROT.RNG.getWeightedValue(list);
                         Game.addEntity(entityName,i,j,k);
