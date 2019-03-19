@@ -176,6 +176,7 @@ var ItemBuilder = {
 
 var UseMessages = {
     Bleeding: ["You feel refreshed!","Ouch!"],
+    Poison: ["You are no longer poisoned.","You are poisoned!"],
     Hypothermia: ["That warmed you up!","You feel colder!"],
     Burning: ["You put out the fire with the ","You burst in flames from the "],
     Overheating: ["That cooled you down!","You feel hotter!"],
@@ -274,12 +275,39 @@ function Item(name, char, color, effects,shortDescription,longDescription,uses=1
                 }
                 // Special effects
                 if (fx[i] == 'Burning') {
-                    for (let ii = -1; ii < 2; ii++) {
-                        for (let jj = -1; jj < 2; jj++) {
-                            let testKey = (Game.player.x + ii) + ',' + (Game.player.y + jj) + ',' + (Game.player.z);
-                            if (testKey in Game.map && Game.map[testKey].entity != null && 'melt' in Game.map[testKey].entity) {
-                                Game.map[testKey].entity.melt();
+                    for (let k = 0; k < 2; k++) {
+                        var connection = Game.map[Game.player.getKey()].contains;
+                        for (let ii = -1; ii < 2; ii++) {
+                            for (let jj = -1; jj < 2; jj++) {
+                                var testKey;
+                                if (k==0) {
+                                    testKey=(Game.player.x + ii) + ',' + (Game.player.y + jj) + ',' + (Game.player.z);
+                                }
+                                else {
+                                    let zList = connection.zList();
+                                    let coords;
+                                    if (zList[0] == Game.player.z) {
+                                        coords = connection.localPos(zList[1]);
+                                        coords.push(zList[1]);
+                                    }
+                                    else {
+                                        coords = connection.localPos(zList[0]);
+                                        coords.push(zList[0]);
+                                    }
+                                    testKey = (coords[0]+ii)+','+(coords[1]+jj)+','+coords[2];
+                                }
+                                console.log(testKey);
+
+                                if (testKey in Game.map && Game.map[testKey].entity != null && 'melt' in Game.map[testKey].entity) {
+                                    Game.map[testKey].entity.melt();
+                                }
                             }
+                        }
+                        if (Game.map[Game.player.getKey()].contains != null && Game.map[Game.player.getKey()].contains instanceof Connection) {
+                            continue;
+                        }
+                        else {
+                            break;
                         }
                     }
                 }
