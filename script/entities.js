@@ -521,6 +521,27 @@ var RangeMixin = function(obj,accuracy,number,range,effect,frequency,character='
     }
 }
 
+var MimicMixin = function(obj,activeProps,inactiveProps,revealDist=3) {
+    obj.activeProps = activeProps;
+    obj.inactiveProps = inactiveProps;
+    obj.revealDist=revealDist;
+    obj.mimicState = function(revealed) {
+        var setProps;
+        if (revealed) {
+            setProps=this.activeProps;
+        }
+        else {
+            setProps=this.inactiveProps;
+        }
+        let props = Object.getOwnPropertyNames(setProps);
+        for (let i=0;i<props.length;i++) {
+            this[props[i]] = setProps[props[i]];
+        }
+        this.revealed=revealed;
+    }
+    obj.mimicState(false);
+}
+
 var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
     obj.dmg=dmg;
     obj.slow=slow;
@@ -559,8 +580,14 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
         this.seenVia=null;
         if (this.chaseTimer<=0 && !this.relentless) {
             this.targetPos=null;
+            if ('mimicState' in this && this.revealed && ROT.RNG.getUniform()>0.5) {
+                this.mimicState(false);
+            }
         }
         else {
+            if ('mimicState' in this && !this.revealed && (Math.abs(this.targetPos[0]-this.x) + Math.abs(this.targetPos[1]-this.y)) < this.revealDist) {
+                this.mimicState(true);
+            }
             this.chaseTimer--;
         }
 
@@ -596,6 +623,11 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
         }
         if (this.onFire>=0 && !this.immuneToFire) {
             this.targetDir=null;
+        }
+        else {
+            if ('revealed' in this && !this.revealed) {
+                return;
+            }
         }
         while (!success && breaker < 5) {
             breaker++;
@@ -985,6 +1017,7 @@ var EntityMaker = {
             newThing.burns=false;
             newThing.yellSound="roars";
             newThing.amphibious=true;
+            MimicMixin(newThing,{char:'g',color:'#ccc',name:'Gargoyle'},{char:'\u03A9',color:'#ddd',name:'Statue'});
             break;
             case 'BronzeGolem':
             newThing = new Entity(x,y,z,'G','#d80','Bronze Golem',true);
