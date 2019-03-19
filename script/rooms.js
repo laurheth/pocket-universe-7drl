@@ -1,16 +1,16 @@
 var RoomGen = {
     //colors:['#f00','#ff0','#0f0','#0ff','#00f','#f0f'],
-    roomOpts: {
-        'rectRoom':3,
-        'roundRoom':3,
-        'tRoom':3,
-        'caveRoom':3,
-        'hallRoom':3,
-        'islandRoom':1,},
+    
     biomeOpts:function(biome) {
         var opts={};
         opts.tags=['temperate'];
-        
+        opts.roomOpts= {
+            'rectRoom':6,
+            'roundRoom':6,
+            'tRoom':6,
+            'caveRoom':6,
+            'hallRoom':6,
+            'islandRoom':1,};
         opts.items={
             'Coffee':this.chanceCurve(1,1),
             'Icecream':this.chanceCurve(1,1),
@@ -183,7 +183,7 @@ var RoomGen = {
                 opts.tileNames=['Ice Wall','Ice Floor'];
                 opts.wallColor='#ccf';
                 opts.floorColor='#bbf';
-                opts.roomOpts=this.roomOpts;
+                //opts.roomOpts=this.roomOpts;
                 opts.tags=['cold'];
                 opts.features={
                     lake:0.5,
@@ -207,7 +207,6 @@ var RoomGen = {
                 opts.tileNames=['Ice Wall','Ice Floor'];
                 opts.wallColor='#cff';
                 opts.floorColor='#bdf';
-                opts.roomOpts=['roundRoom'];
                 opts.roomOpts={
                     'roundRoom':1,
                 },
@@ -215,15 +214,16 @@ var RoomGen = {
                 opts.features={
                     lake:0.3,
                     river: 0.2,
-                    entitycluster: 1,
-                    forcluster:['Moose'],
+                    entitycluster: 0.3,
+                    forcluster:['Ice'],
                     liquid: 0,
                 };
                 opts.monsters={
                     Bullbutter:100,
                 };
                 opts.doodads={
-                    Ice:2,
+                    Ice:1,
+                    Moose:3,
                 };
                 opts.onlyOneMonster=true;
                 opts.names1=["Freezing","Cold","Shivering","Numb","Frozen","Icy","Arctic","Snowy"];
@@ -285,7 +285,7 @@ var RoomGen = {
                 opts.wallColor='#f31';
                 opts.floorColor='#e20';
                 opts.tileNames=['Hot Stone Wall','Hot Stone Floor'];
-                opts.roomOpts=this.roomOpts;
+                //opts.roomOpts=this.roomOpts;
                 opts.tags=['hot'];
                 opts.features={
                     lake:0.3,
@@ -309,7 +309,7 @@ var RoomGen = {
                 opts.wallColor='#f31';
                 opts.floorColor='#655';
                 opts.tileNames=['Hot Stone Wall','Ashen Floor'];
-                opts.roomOpts=this.roomOpts;
+                //opts.roomOpts=this.roomOpts;
                 opts.tags=['hot'];
                 opts.features={
                     lake:0.3,
@@ -335,8 +335,8 @@ var RoomGen = {
                 opts.floorColor='#0e0';
                 opts.tileNames=['Vine-covered Wall','Grass Floor'];
                 opts.roomOpts={
-                    'caveRoom':3,
-                    'roundRoom':2,
+                    'caveRoom':6,
+                    'roundRoom':4,
                     'islandRoom':1,
                 },
                 opts.features={
@@ -365,8 +365,9 @@ var RoomGen = {
                 opts.wallColor='#0c3';
                 opts.floorColor='#0b2';
                 opts.roomOpts={
-                    'caveRoom':3,
-                    'roundRoom':2,
+                    'caveRoom':6,
+                    'roundRoom':4,
+                    'islandRoom':1,
                 },
                 opts.features={
                     lake:0.8,
@@ -480,7 +481,7 @@ var RoomGen = {
         var roomBounds=[0,0,0,0];
         //console.log(opts);
         if (bigroom && 'islandRoom' in opts.roomOpts) {
-            opts.roomOpts.islandRoom *= 3;
+            opts.roomOpts.islandRoom *= 6;
         }
         //var roomOpts = ['rectRoom','roundRoom','tRoom','caveRoom','hallRoom'];
         let thisRoom = ROT.RNG.getWeightedValue(opts.roomOpts);
@@ -693,8 +694,10 @@ var RoomGen = {
         console.log("Island created");
         var islandPlan={};
         let numsteps=4;
-        roomSize[0]*=2;
-        roomSize[1]*=2;
+        if (bigroom) {
+            roomSize[0]*=2;
+            roomSize[1]*=2;
+        }
         roomBounds[0]=-numsteps; roomBounds[1]=-numsteps; roomBounds[2]=roomSize[0]+numsteps; roomBounds[3]=roomSize[1]+numsteps;
         var numMountains=0;
         var newWalls = [];
