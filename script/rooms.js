@@ -1,6 +1,6 @@
 var RoomGen = {
     //colors:['#f00','#ff0','#0f0','#0ff','#00f','#f0f'],
-    roomOpts:['rectRoom','roundRoom','tRoom','caveRoom','hallRoom'],
+    roomOpts:['rectRoom','roundRoom','tRoom','caveRoom','hallRoom','islandRoom'],
     biomeOpts:function(biome) {
         var opts={};
         opts.tags=['temperate'];
@@ -303,7 +303,7 @@ var RoomGen = {
                 opts.wallColor='#0f0';
                 opts.floorColor='#0e0';
                 opts.tileNames=['Vine-covered Wall','Grass Floor'];
-                opts.roomOpts=['caveRoom','roundRoom'];
+                opts.roomOpts=['caveRoom','roundRoom','islandRoom'];
                 opts.features={
                     lake:0.1,
                     river: 0.2,
@@ -370,6 +370,7 @@ var RoomGen = {
                 bigroom=true;
             }
         }
+        
         var biomeList = {
             Dungeon: 10,
             Cold: Math.min(10,4+Game.level),
@@ -430,14 +431,31 @@ var RoomGen = {
             monsterProb=1;
         }
         var opts=this.biomeOpts(biomeChoice);
+
+        // island room is only possible if the room is big
+        /*if (!bigroom && opts.roomOpts.indexOf('islandRoom')>=0) {
+            opts.roomOpts.splice(opts.roomOpts.indexOf('islandRoom'),1);
+        }*/
+
         //console.log(opts.monsters);
         //console.log(opts.monsters);
         var roomBounds=[0,0,0,0];
         //console.log(opts);
         //var roomOpts = ['rectRoom','roundRoom','tRoom','caveRoom','hallRoom'];
         let thisRoom = ROT.RNG.getItem(opts.roomOpts);
+        if (thisRoom == 'islandRoom') {
+            if (!bigroom) {
+                opts.names2=["Isle","Islet","Cay"];
+            }
+            else {
+                opts.names2=["Island","Archipelago","Isle"];
+            }
+        }
         //console.log(roomBounds);
-        newWalls=this[thisRoom](k,roomSize,opts,roomBounds,bigroom);
+        var newWalls=null;
+        while (newWalls==null) {
+            newWalls=this[thisRoom](k,roomSize,opts,roomBounds,bigroom);
+        }
         if ('tileNames' in opts) {
             this.nameTiles(k,roomBounds,opts.tileNames);
         }
@@ -622,6 +640,86 @@ var RoomGen = {
                         Game.map[newKey] = new Tile('.',opts.floorColor,true,true,null,-1);
                         Game.freeCells.push(newKey);
                     }
+                }
+            }
+        }
+        return newWalls;
+    },
+
+    islandRoom: function(k,roomSize,opts,roomBounds,bigroom=true) {
+        console.log("Island created");
+        var islandPlan={};
+        let numsteps=4;
+        roomSize[0];
+        roomSize[1];
+        roomBounds[0]=-numsteps; roomBounds[1]=-numsteps; roomBounds[2]=roomSize[0]+numsteps; roomBounds[3]=roomSize[1]+numsteps;
+        var numMountains=0;
+        var newWalls = [];
+        for (let i = -numsteps; i <= roomSize[0]+numsteps; i++) {
+            for (let j = -numsteps; j <= roomSize[1]+numsteps; j++) {
+                let key = i+','+j;
+                islandPlan[key] = [Math.floor(3*ROT.RNG.getUniform()),0];
+            }
+        }
+        for (let k = 0; k < 4; k++) {
+            for (let i = -numsteps; i <= roomSize[0]+numsteps; i++) {
+                for (let j = -numsteps; j <= roomSize[1]+numsteps; j++) {
+                    let key = i + ',' + j;
+                    for (let ii = -1; ii < 2; ii++) {
+                        for (let jj = -1; jj < 2; jj++) {
+                            if (ii == 0 && jj == 0) {
+                                continue;
+                            }
+                            let otherKey = (i + ii) + ',' + (j + jj);
+                            if (otherKey in islandPlan) {
+                                islandPlan[key][1] += islandPlan[otherKey][0];
+                            }
+                        }
+                    }
+                }
+            }
+            numMountains=0;
+            for (let i = -numsteps; i <= roomSize[0]+numsteps; i++) {
+                for (let j = -numsteps; j <= roomSize[1]+numsteps; j++) {
+                    let key = i + ',' + j;
+                    if (islandPlan[key][1] > 10) {
+                        islandPlan[key][0] = 2;
+                        numMountains++;
+                    }
+                    else if ((islandPlan[key][1] > 5)) {
+                        islandPlan[key][0] = 1;
+                    }
+                    else {
+                        islandPlan[key][0] = 0;
+                    }
+                    islandPlan[key][1]=0;
+                }
+            }
+        }
+        if (numMountains==0) {
+            console.log("No mountains! Failure.");
+            return null;
+        }
+
+        for (let i=-roomSize[0]-Game.viewDist;i<=2*roomSize[0]+Game.viewDist;i++) {
+            for (let j=-roomSize[1]-Game.viewDist;j<2*roomSize[1]+Game.viewDist;j++) {
+                let planKey = i+','+j;
+                let newKey = i+','+j+','+k;
+                if (!(planKey in islandPlan) || islandPlan[planKey][0]==0) {
+                    // liquid tile
+                    Game.map[newKey] = new Tile('.',opts.floorColor,true,true,null,-1);
+                    //Game.freeCells.push(newKey);
+                    this.makeLiquidTile(i,j,k,opts.features.liquid);
+                }
+                else if (islandPlan[planKey][0]==1) {
+                    // floor
+                    Game.map[newKey] = new Tile('.',opts.floorColor,true,true,null,-1);
+                    Game.freeCells.push(newKey);
+                }
+                else {
+                    // wall
+                    Game.map[newKey] = new Tile('#',opts.wallColor,false,false,null,-1);
+                    newWalls.push(newKey);
                 }
             }
         }

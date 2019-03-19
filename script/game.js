@@ -186,6 +186,13 @@ var Game = {
 
             //console.log(this.freeCells.length);
             RoomGen.generateRoom(k,roomSize);
+            if (k==0 && this.walls.length==0) {
+                console.log("Whoops. Restart.");
+                this.roomNames=[];
+                this.roomTags={};
+                this.map={};
+                continue;
+            }
             //console.log(this.freeCells.length);
 
             if (k>0 && this.walls.length>0) {
@@ -304,7 +311,7 @@ var Game = {
                 }
             }
         }
-
+        return true;
         //this._addEntity();  
     },
 
