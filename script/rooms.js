@@ -769,15 +769,21 @@ var RoomGen = {
         let sy=Math.floor(ROT.RNG.getUniform()*(roomBounds[3]-roomBounds[1])) + roomBounds[1];
         var x = sx;
         var y = sy;
+        var breaker;
         if (steps<0) {
             steps = Math.floor(ROT.RNG.getUniform()*20)+20;
         }
-        while (steps>0) {
+        breaker = 2*steps;
+        while (steps>0 && breaker>0) {
             let dir=this.randOrtho();
             x+=dir[0];
             y+=dir[1];
-            Game.addEntity(entityName,x,y,k);
-            steps--;
+            let testKey=x+','+y+','+k;
+            if (testKey in Game.map && Game.map[testKey].passThrough() && Game.map[testKey].water<Game.minWater) {
+                Game.addEntity(entityName,x,y,k);
+                steps--;
+            }
+            breaker--;
             if (x<roomBounds[0] || x>roomBounds[2] || y < roomBounds[1] || y>roomBounds[3]) {
                 x=sx;
                 y=sy;

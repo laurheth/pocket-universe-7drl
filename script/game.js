@@ -23,7 +23,7 @@ var Game = {
     lastMessage: [""],
     roomNames:[],
     roomTags:{},
-    level: 1,
+    level: 11,
     targetMode: false,
     portalList:[],
     viewDist:40,

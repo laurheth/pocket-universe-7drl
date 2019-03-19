@@ -37,7 +37,7 @@ function Entity (x,y,z,char,color,name, lightPasses=true) {
 
 Entity.prototype.getChar = function() {
     if (!this.seen) {
-        if (this.violent) {
+        if (this.violent && !('revealed' in this)) {
             Game.sendMessage(this.getName(true)+" "+this.yellSound+"!");
         }
         this.seen=true;
@@ -140,6 +140,9 @@ spreadFire = function(key,localOnly=false) {
 Entity.prototype.common = function() {
     
     if (!this.active) {return;}
+    if (this.aquatic && (Game.map[this.getKey()].water < Game.minWater || !Game.map[this.getKey()].lake)) {
+        this.hateCounter += 2;
+    }
     if (this.z in Game.roomTags && this.tempHate.length>0) {
         for (let i=0;i<this.tempHate.length;i++) {
             if (Game.roomTags[this.z].indexOf(this.tempHate[i])>=0) {
@@ -538,6 +541,9 @@ var MimicMixin = function(obj,activeProps,inactiveProps,revealDist=3) {
             this[props[i]] = setProps[props[i]];
         }
         this.revealed=revealed;
+        if (revealed) {
+            Game.sendMessage(this.getName(true)+" springs into life!",true,this.getKey());
+        }
     }
     obj.mimicState(false);
 }
@@ -585,8 +591,9 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
             }
         }
         else {
-            if ('mimicState' in this && !this.revealed && (Math.abs(this.targetPos[0]-this.x) + Math.abs(this.targetPos[1]-this.y)) < this.revealDist) {
+            if ('mimicState' in this && !this.revealed && (Math.abs(this.targetPos[0]-this.x) + Math.abs(this.targetPos[1]-this.y)) <= this.revealDist) {
                 this.mimicState(true);
+                return;
             }
             this.chaseTimer--;
         }
@@ -629,13 +636,11 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
                 return;
             }
         }
+        if (this.aquatic && (Game.map[this.getKey()].water < Game.minWater || !Game.map[this.getKey()].lake)) {
+            this.targetDir=null;
+        }
         while (!success && breaker < 5) {
             breaker++;
-            if (this.aquatic && (Game.map[this.getKey()].water < Game.minWater || !Game.map[this.getKey()].lake)) {
-                success = this.step(Math.floor(ROT.RNG.getUniform() * 3) - 1, Math.floor(ROT.RNG.getUniform() * 3) - 1,false,false);
-                this.hateCounter += 2;
-                continue;
-            }
             if (this.targetDir == null) {
                 success = this.step(Math.floor(ROT.RNG.getUniform() * 3) - 1, Math.floor(ROT.RNG.getUniform() * 3) - 1,false,true);
             }
@@ -1017,7 +1022,7 @@ var EntityMaker = {
             newThing.burns=false;
             newThing.yellSound="roars";
             newThing.amphibious=true;
-            MimicMixin(newThing,{char:'g',color:'#ccc',name:'Gargoyle'},{char:'\u03A9',color:'#ddd',name:'Statue'});
+            MimicMixin(newThing,{char:'G',color:'#ccc',name:'Gargoyle'},{char:'\u03A9',color:'#ddd',name:'Statue'},4);
             break;
             case 'BronzeGolem':
             newThing = new Entity(x,y,z,'G','#d80','Bronze Golem',true);
