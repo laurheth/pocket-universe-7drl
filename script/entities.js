@@ -942,7 +942,7 @@ Entity.prototype.checkSafe = function(testKey) {
     var result=1; // determine probability of taking the risk
     if (testKey in Game.map) {
         if (Game.map[testKey].water >= Game.minWater) {
-            if (Game.map[testKey].liquidType == this.hurtByLiquidType && (!this.immuneToFire && this.hurtByLiquidType   == 1)) {
+            if (Game.map[testKey].liquidType == this.hurtByLiquidType && !(Game.map[testKey].liquidType==1 && this.immuneToFire)) {
                 result = 0; // don't step into lava
             }
             else if ((Game.map[testKey].water > Game.deepThreshold || Game.map[testKey].lake) && !this.aquatic && !this.amphibious) {

@@ -58,7 +58,7 @@ var RoomGen = {
                 opts.aquatic = {
                     Carp:this.chanceCurve(1,10),
                     Jellyfish:this.chanceCurve(10,16,0.95),
-                    Liopleurodon:0.5*this.chanceCurve(20,26),
+                    Liopleurodon:this.chanceCurve(20,26),
                 };
                 opts.doodads={
                     Statue:2,
@@ -367,6 +367,7 @@ var RoomGen = {
                 opts.aquatic = {
                     Carp:this.chanceCurve(1,10),
                     Jellyfish:this.chanceCurve(10,16,0.95),
+                    Liopleurodon:this.chanceCurve(20,26),
                 };
                 opts.doodads={
                     "Creeping Vine":10,
@@ -398,6 +399,7 @@ var RoomGen = {
                 opts.aquatic = {
                     Carp:this.chanceCurve(1,10),
                     Jellyfish:this.chanceCurve(10,16,0.95),
+                    Liopleurodon:this.chanceCurve(20,26),
                 };
                 opts.doodads={
                     Reed:10,
@@ -713,10 +715,10 @@ var RoomGen = {
         console.log("Island created");
         var islandPlan={};
         let numsteps=4;
-        if (bigroom) {
+        /*if (bigroom) {
             roomSize[0]*=2;
             roomSize[1]*=2;
-        }
+        }*/
         roomBounds[0]=-numsteps; roomBounds[1]=-numsteps; roomBounds[2]=roomSize[0]+numsteps; roomBounds[3]=roomSize[1]+numsteps;
         var numMountains=0;
         var newWalls = [];
