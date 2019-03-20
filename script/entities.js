@@ -344,7 +344,7 @@ var ShamblerMixin = function(obj) {
 }
 
 var WizardMixin = function(obj,castprob,shambles=false) {
-    RangeMixin(obj,1,1,10,'Bleeding',0.5);
+    RangeMixin(obj,1,0,1,10,'Bleeding',0.5);
     obj.isWizard=true;
     obj.minDist=4;
     obj.home=obj.z;
@@ -358,7 +358,8 @@ var WizardMixin = function(obj,castprob,shambles=false) {
             // Magic missile
             case 0:
                 this.rangedetails= {
-                    acc:0.9,
+                    acc:0.95,
+                    accSlope:0.01,
                     num:1,
                     rng:10,
                     eff:'Bleeding',
@@ -374,6 +375,7 @@ var WizardMixin = function(obj,castprob,shambles=false) {
             case 1:
                 this.rangedetails= {
                     acc:0.2,
+                    accSlope:0.0,
                     num:5,
                     rng:5,
                     eff:'Burning',
@@ -388,7 +390,8 @@ var WizardMixin = function(obj,castprob,shambles=false) {
             // Poison
             case 2:
                 this.rangedetails= {
-                    acc:0.9,
+                    acc:0.95,
+                    accSlope:0.01,
                     num:1,
                     rng:10,
                     eff:'Poison',
@@ -403,7 +406,8 @@ var WizardMixin = function(obj,castprob,shambles=false) {
             // Frost
             case 2:
                 this.rangedetails= {
-                    acc:0.9,
+                    acc:1,
+                    accSlope:0.0,
                     num:1,
                     rng:10,
                     eff:'Hypothermia',
@@ -460,9 +464,10 @@ var WizardMixin = function(obj,castprob,shambles=false) {
 }
 
 //RangeMixin(newThing,0.2,5,5,'Burning');
-var RangeMixin = function(obj,accuracy,number,range,effect,frequency,character='*',colour=Game.burnColor(),message="breathes fire",damage=1,hitmessage="Ouch!") {
+var RangeMixin = function(obj,accuracy,accuracySlope,number,range,effect,frequency,character='*',colour=Game.burnColor(),message="breathes fire",damage=1,hitmessage="Ouch!") {
     obj.rangedetails = {
         acc:accuracy,
+        accSlope:accuracySlope,
         num:number,
         rng:range,
         eff:effect,
@@ -482,9 +487,10 @@ var RangeMixin = function(obj,accuracy,number,range,effect,frequency,character='
         if (Math.abs(Game.map[this.getKey()].lastSeen-Game.currentTurn)>1) {
             return false;
         } 
-        if (playerDist < this.rangedetails.rng && ROT.RNG.getUniform()<this.rangedetails.freq) {
+        if (playerDist <= this.rangedetails.rng && ROT.RNG.getUniform()<this.rangedetails.freq) {
             Game.sendMessage(this.getName(true)+" "+this.rangedetails.msg+"!");
             success=true;
+            let accActual = this.rangedetails.acc - playerDist * this.rangedetails.accSlope;
             for (let i=0;i<this.rangedetails.num;i++) {
                 var tx=Game.player.x;
                 var ty=Game.player.y;
@@ -978,7 +984,7 @@ var EntityMaker = {
             newThing.burns=false;
             break;
             case 'Jellyfish':
-            newThing = new Entity(x,y,z,'J','#f00',"Jumbo Jellyfish",true);
+            newThing = new Entity(x,y,z,'J','#f00',"Giant Jumbo Jellyfish",true);
             ChaseMixin(newThing,'stings','3',true);
             HurtByLiquidMixin(newThing,1);
             newThing.tempHate.push('cold');
@@ -999,7 +1005,7 @@ var EntityMaker = {
             case 'Dragon':
             newThing = new Entity(x,y,z,'D','#0f0','Dragon',true);
             ChaseMixin(newThing,'attacks',6,false,true);
-            RangeMixin(newThing,0.2,5,6,'Burning',0.5,'*','#ff0',"breathes fire",1,"You are burning!");
+            RangeMixin(newThing,0.2,0.0,5,6,'Burning',0.5,'*','#ff0',"breathes fire",1,"You are burning!");
             newThing.yellSound="roars";
             newThing.burns=false;
             newThing.amphibious=true;
@@ -1011,7 +1017,7 @@ var EntityMaker = {
             HurtByLiquidMixin(newThing,1);
             MeltMixin(newThing,0);
             newThing.burns=false;
-            RangeMixin(newThing,1,1,8,'Hypothermia',0.3,'*','#0ff',"casts a ray of frost",21,"You feel cold!");
+            RangeMixin(newThing,1,0.01,1,8,'Hypothermia',0.3,'*','#0ff',"casts a ray of frost",21,"You feel cold!");
             //WizardMixin(newThing);
             newThing.tempHate.push('hot');
             newThing.yellSound="shivers";
@@ -1099,7 +1105,7 @@ var EntityMaker = {
             HurtByLiquidMixin(newThing,1);
             newThing.tempHate.push('hot');
             newThing.yellSound="bellows";
-            RangeMixin(newThing,0.9,1,12,'Bleeding',0.3,',','#ff0',"fires an arrow",3,"You are hit!");
+            RangeMixin(newThing,0.95,0.04,1,12,'Bleeding',0.3,',','#ff0',"fires an arrow",3,"You are hit!");
             break;
             case 'Bullbutter':
             newThing = new Entity(x,y,z,'M','#0ff','Bullbutter the Moosetaur',true);
@@ -1109,7 +1115,7 @@ var EntityMaker = {
             newThing.yellSound="bellows";
             newThing.relentless=true;
             newThing.important=true;
-            RangeMixin(newThing,0.9,1,12,'Bleeding',0.4,',','#ff0',"fires an arrow",3,"You are hit!");
+            RangeMixin(newThing,1.0,0.02,1,12,'Bleeding',0.4,',','#ff0',"fires an arrow",3,"You are hit!");
             break;
             case 'Moose':
             newThing = new Entity(x,y,z,'M','#d80','Moose',true);

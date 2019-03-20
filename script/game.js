@@ -151,6 +151,9 @@ var Game = {
             px = parseInt(parts[0]);
             py = parseInt(parts[1]);
             pz = parseInt(parts[2]);
+            if (specificZ >= 0 && pz != specificZ) {
+                continue;
+            }
             attempts++;
         } while ((pz == this.player.z && attempts < 15) || !this._portalPathExists(this.player.z,pz) || (specificZ>=0 && pz != specificZ && attempts<15));
 

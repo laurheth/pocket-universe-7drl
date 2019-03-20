@@ -170,13 +170,12 @@ var RoomGen = {
                 };
                 opts.onlyOneMonster=true;
                 opts.items={
-                    'Healing Potion':this.chanceCurve(1,1,0.98),
-                    'Wand of Reach':this.chanceCurve(2,12,0.95),
-                    'Wand of Retreat':this.chanceCurve(6,20),
-                    'Wand of Banishing':this.chanceCurve(10,26),
+                    'Wand of Reach':5,
+                    'Wand of Retreat':5,
+                    'Wand of Banishing':5,
                 };
                 opts.names1=["Mystic","Cursed","Bewitched","Glowing","Runed","Immortal"];
-                opts.names2=["Cloister","Tower","Laboratory","Manse","Hall","Study","Academy","Sanctum"];
+                opts.names2=["Cavern","Gulch","Grotto"];
                 //opts.floorChars=['.'];
             break;
             case 'Cold':
@@ -214,8 +213,8 @@ var RoomGen = {
                 opts.features={
                     lake:0.3,
                     river: 0.2,
-                    entitycluster: 0.3,
-                    forcluster:['Ice'],
+                    entitycluster: 0,
+                    forcluster:[],
                     liquid: 0,
                 };
                 opts.monsters={
@@ -223,7 +222,12 @@ var RoomGen = {
                 };
                 opts.doodads={
                     Ice:1,
-                    Moose:3,
+                    Moose:4,
+                };
+                opts.items={
+                    'Dragonleather Armor':5,
+                    'Plate Armor':5,
+                    'Wand of Banishing':5,
                 };
                 opts.onlyOneMonster=true;
                 opts.names1=["Freezing","Cold","Shivering","Numb","Frozen","Icy","Arctic","Snowy"];
@@ -253,7 +257,7 @@ var RoomGen = {
                 opts.aquatic = {
                     Carp:this.chanceCurve(1,10),
                     Jellyfish:this.chanceCurve(10,16,0.95),
-                    Liopleurodon:0.5*this.chanceCurve(20,26),
+                    Liopleurodon:this.chanceCurve(20,26),
                 };
                 opts.names1=["Dark","Stoney","Deep","Echoey","Slumber","Rocky"];
                 opts.names2=["Cavern","Gulch","Grotto"];
@@ -275,6 +279,11 @@ var RoomGen = {
                 };
                 opts.monsters={
                     'Horse Sized Duck':100,
+                };
+                opts.items={
+                    'Chainmail Armor':5,
+                    'Wand of Retreat':5,
+                    'Wand of Reach':5,
                 };
                 opts.onlyOneMonster=true;
                 opts.names1=["Neigh","Quack"];
@@ -320,6 +329,11 @@ var RoomGen = {
                 };
                 opts.monsters={
                     Azazel:100,
+                };
+                opts.items={
+                    'Snowknight Armor':10,
+                    'Wand of Retreat':5,
+                    'Wand of Reach':5,
                 };
                 opts.doodads={
                     Boulder:2,
@@ -409,7 +423,7 @@ var RoomGen = {
                 bigroom=true;
             }
         }
-        
+        var forceItem=false;
         var biomeList = {
             Dungeon: 10,
             Cold: Math.min(10,4+Game.level),
@@ -443,26 +457,31 @@ var RoomGen = {
         var monsterProb=0.004+0.00005*Game.level;
         if (bigroom) {
             monsterProb*=0.8;
+            forceItem=true;
         }
         if (k==4 && Game.level==5) {
             Game.sendMessage("You hear a distant quacking sound...");
             biomeChoice='DuckCave';
             monsterProb=1;
+            forceItem=true;
         }
         else if (k==4 && Game.level==20) {
             Game.sendMessage("There are moose tracks everywhere here!");
             biomeChoice='MooseCave';
             monsterProb=1;
+            forceItem=true;
         }
         else if (k==4 && Game.level==15) {
             Game.sendMessage("The walls here have a thin layer of glitter...");
             biomeChoice='TwinkleZone';
             monsterProb=1;
+            forceItem=true;
         }
         else if (k==4 && Game.level==10) {
             Game.sendMessage("This whole area is billowing with smoke.");
             biomeChoice='DemonDen';
             monsterProb=1;
+            forceItem=true;
         }
         else if (k==4 && Game.level==26) {
             //Game.sendMessage("There are moose tracks everywhere here!");
@@ -551,7 +570,7 @@ var RoomGen = {
             roomCells = this.placeEntities(k,opts.doodads,roomBounds,(bigroom) ? 0.03 : 0.05);
         }
         //console.log(opts.items);
-        if (ROT.RNG.getUniform()<Math.min(0.5,(0.1 * k))) {
+        if (forceItem || ROT.RNG.getUniform()<Math.min(0.5,(0.1 * k))) {
             var breaker=0;
             while (!this.placeItem(roomCells,opts.items) && breaker<20) {
                 breaker++;
