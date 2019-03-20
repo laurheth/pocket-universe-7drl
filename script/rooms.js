@@ -520,6 +520,11 @@ var RoomGen = {
         var newWalls=null;
         while (newWalls==null) {
             newWalls=this[thisRoom](k,roomSize,opts,roomBounds,bigroom);
+            if (newWalls == null) {
+                // failures are often due to small sizes. Make incrementally bigger until it works.
+                roomSize[0]++;
+                roomSize[1]++;
+            }
         }
         if ('tileNames' in opts) {
             this.nameTiles(k,roomBounds,opts.tileNames);
