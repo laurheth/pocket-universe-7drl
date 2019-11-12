@@ -33,13 +33,13 @@ var Game = {
         let screen = document.getElementById('screen');
         this.display = new ROT.Display({fontSize:19,fontFamily:'Overpass Mono, monospace'});
         var setsize=this.display.computeSize(screen.clientWidth,screen.clientHeight);
-        //console.log(screen.clientWidth+','+screen.clientHeight);
+
         this.display.setOptions({width: setsize[0],height: setsize[1]});
         this.offset[0] = parseInt(setsize[0]/2);
         this.offset[1] = parseInt(setsize[1]/2);
 
         this.viewDist = Math.ceil(Math.sqrt(this.offset[0]*this.offset[0] + this.offset[1]*this.offset[1]))+1;
-        //console.log(fontsize);
+
         screen.appendChild(this.display.getContainer());
         this.playerName = document.getElementById('playerName');
         this.statusList = document.getElementById('statusList');
@@ -187,19 +187,15 @@ var Game = {
                 pC=[parseInt(roomSize[0]/2) , parseInt(roomSize[1]/2),k , px, py, pz];
             }
 
-            //console.log(this.freeCells.length);
             RoomGen.generateRoom(k,roomSize);
             if (k==0 && this.walls.length==0) {
-                console.log("Whoops. Restart.");
                 this.roomNames=[];
                 this.roomTags={};
                 this.map={};
                 continue;
             }
-            //console.log(this.freeCells.length);
 
             if (k>0 && this.walls.length>0) {
-                //console.log(pC);
                 newPortal = new Connection(pC[0],pC[1],pC[2],pC[3],pC[4],pC[5]);
                 this.portalList.push(newPortal);
                 //this.map[newPortal.getKey(1)].contains=newPortal;
@@ -252,9 +248,6 @@ var Game = {
             for (let j=0;j<2;j++) {
                 if (!(this.portalList[i].getKey(j) in Game.map) || Game.map[this.portalList[i].getKey(j)].contains != this.portalList[i]) {
                     didSomething=true;
-                    console.log("Broken portal found. Attempting to fix...");
-                    console.log(this.portalList[i].getKey(0)+"<->"+this.portalList[i].getKey(1));
-                    //let otherj = (j+1) % 2;
                     success=true;
                     if (!this.portalList[i].correctEntrance(!j,true)) {
                         success &= this.portalList[i].correctEntrance(j,true);
@@ -269,7 +262,6 @@ var Game = {
                 }
             }
             if (!success) {
-                console.log("Unsuccessful. Removing portal.");
                 //Not sure what to do if it really doesn't work lmao
                 // remove it, it'll be fine. Maybe.
                 for (let j=0;j<2;j++) {
@@ -279,9 +271,9 @@ var Game = {
                 }
                 this.portalList[i]=null;
             }
-            else if (didSomething) {
-                console.log("Success!");
-            }
+            // // else if (didSomething) {
+
+            // }
         }
         var key;
         while (1 == 1) {
@@ -310,7 +302,6 @@ var Game = {
                 if (safeKey in Game.map && Game.map[safeKey].entity != null && Game.map[safeKey].entity != this.player && (Game.map[safeKey].entity.violent || Game.map[safeKey].entity.name=="Ice")) {
                     Game.map[safeKey].entity.active=false;
                     Game.map[safeKey].entity=null;
-                    //console.log('Removed something');
                 }
             }
         }
@@ -319,15 +310,12 @@ var Game = {
     },
 
     _portalPathExists: function(sz,ez) {
-        //console.log(sz + " " + ez);
-        //console.log(this.portalList);
         if (sz==ez) {return true;}
         if (sz<0 || ez<0) {return false;}
         var connectObj = {};
         for (let i=0;i<this.portalList.length;i++) {
             if (this.portalList[i] != null) {
                 let zList = this.portalList[i].zList();
-                //console.log(zList);
                 if (!(zList[0] in connectObj)) {
                     connectObj[zList[0]]=[];
                 }
@@ -338,7 +326,7 @@ var Game = {
                 connectObj[zList[1]].push(zList[0]);
             }
         }
-        //console.log(connectObj);
+
         var toSearch;//
         if (sz in connectObj) {
             toSearch = connectObj[sz];
@@ -352,7 +340,6 @@ var Game = {
         var searched=[sz];
         var success=false;
         while (!success && toSearch.length > 0) {
-            console.log("Searching...");
             searched.push(toSearch[0]);
             if (toSearch[0] == ez) {
                 success=true;
@@ -361,28 +348,18 @@ var Game = {
             else {
                 if (toSearch[0] in connectObj) {
                     for (let i=0;i<connectObj[toSearch[0]].length;i++) {
-                        //console.log(connectObj[toSearch[0]]);
                         if (i>50) {
                             
-                            console.log("That's strange. Force retry.");
                             return false;
                         }
-                        //console.log(connectObj[toSearch[0]].length);
                         let addSearch = connectObj[toSearch[0]][i];
                         if (searched.indexOf(addSearch) < 0 && toSearch.indexOf(addSearch) < 0) {
                             toSearch.push(addSearch);
                         }
                     }
-                    //console.log("??");
                 }
             }
             toSearch.shift();
-        }
-        if (success) {
-            console.log("Path found!");
-        }
-        else {
-            console.log("Path NOT found");
         }
         return success;
     },
@@ -425,13 +402,29 @@ var Game = {
 
     _drawVisible: function() {
         this._drawLastSeen();
-        this.__drawVisible(true); // main room online
-        this.__drawVisible(false); // add views through portals
-        //this.__drawVisible(true); // second only the main room, overwriting weirdness
-        if (Game.map[Game.player.getKey()].contains != null && Game.map[Game.player.getKey()].contains instanceof Connection) {
-            this._doorWayRender();
-        }
-        this.portalFovPortal=null;
+        const portalList = [];
+        this.fov.compute(this.player.x, this.player.y, this.viewDist, (x, y, r, visibility) => {
+            let key = x + ',' + y + ',' + Game.player.z;
+            if (key in Game.map) {
+                if (Game.map[key].contains != null && Game.map[key].contains instanceof Connection && Game.map[key].contains.open) {
+                    if (key == Game.player.getKey() || Game.map[Game.player.getKey()].contains == null || !(Game.map[Game.player.getKey()].contains instanceof Connection)) {
+                        // Game._drawPortal(Game.map[key].contains);
+                        portalList.push(Game.map[key].contains);
+                    }
+                }
+                if (Game.map[key].getChar() != ' ') {
+                    Game.display.draw(x - Game.player.x + Game.offset[0], y - Game.player.y + Game.offset[1], Game.map[key].getChar(), Game.map[key].getColor());
+                }
+            }
+        });
+        // if (Game.map[Game.player.getKey()].contains != null && Game.map[Game.player.getKey()].contains instanceof Connection) {
+        //     this._doorWayRender();
+        // }
+        // console.log('portal list', portalList);
+        // Main room has been drawn. NOW draw through the portals.
+        portalList.forEach((portal) => {
+            this._drawPortal(portal);
+        });
     },
 
     // Special case wherein players current location is inside of a portal
@@ -458,7 +451,7 @@ var Game = {
         }
         var coords;
         var key;
-        //console.log(sides);
+
         for (let i=-1;i<2;i++) {
             for (let j=-1;j<2;j++) {
                 if (sides[1][j+1] == 1 || sides[i+1][1] == 1) {
@@ -476,31 +469,9 @@ var Game = {
         }
     },
 
-    __drawVisible: function (secondPass) {
-        /*if (!secondPass) {
-            Game.display.clear();
-        }*/
-        this.fov.compute(this.player.x, this.player.y, this.viewDist, function (x, y, r, visibility) {
-            let key = x + ',' + y + ',' + Game.player.z;
-            if (key in Game.map) {
-                if (secondPass==false) {
-                    if (Game.map[key].contains != null && Game.map[key].contains instanceof Connection && Game.map[key].contains.open) {
-                        if (key == Game.player.getKey() || Game.map[Game.player.getKey()].contains == null || !(Game.map[Game.player.getKey()].contains instanceof Connection)) {
-                            Game._drawPortal(Game.map[key].contains);
-                        }
-                    }
-                }
-                if (Game.map[key].getChar() != ' ') {
-                    Game.display.draw(x - Game.player.x + Game.offset[0], y - Game.player.y + Game.offset[1], Game.map[key].getChar(), Game.map[key].getColor());
-                }
-                //Game.directionalDisplay(Game.display, x - Game.player.x, y - Game.player.y, Game.map[key].getChar(), Game.map[key].getColor(),Game.direction);
-            }
-        });
-    },
-
     _drawPortal: function (portal, second = false) {
         //portalFovZ
-        //console.log("Draw portal called");
+
         this.delta = portal.getDelta();
         this.portalFovPortal = portal;
         //var portalDir;
@@ -664,8 +635,7 @@ var targetting = {
     },
     _drawTarget: function() {
         Game._drawVisible();
-        //console.log(Game.player.getKey());
-        //console.log(this.getKey());
+
         Game.display.draw(tx-Game.player.x+Game.offset[0],ty-Game.player.y+Game.offset[1],'X','#ff0');
         if (this.getKey() in Game.map && Math.abs(Game.map[this.getKey()].lastSeen - Game.currentTurn)<1) {
             if (Game.map[this.getKey()].entity != null) {
@@ -1004,7 +974,6 @@ Player.prototype.getPortal = function() {
 };
 
 Player.prototype.openPortal = function(openClose) {
-    //console.log(openClose);
     var success=false;
     for (let i=-1;i<2;i++) {
         for (let j=-1;j<2;j++) {
@@ -1035,7 +1004,7 @@ Player.prototype.checkFireProtection = function() {
 
 Player.prototype.act = function () {
     Game.engine.lock();
-    //console.log(this.getKey());
+
     Game.playerName.innerHTML=this.name;
     Game.dungeonInfo.innerHTML="Dungeon Level "+Game.level+"<br>";//+Game.roomNames[this.z];
     if (this.z>=0 && this.z < Game.roomNames.length) {
@@ -1203,7 +1172,7 @@ Player.prototype.act = function () {
 
     // BLOOD logic
     if ('Bleeding' in this.status) {
-        //console.log(this.status.Bleeding);
+
         if (this.status.Bleeding > 10) {
             delete this.status.Bleeding;
         }
@@ -1426,21 +1395,6 @@ Player.prototype.handleEvent = function (e) {
             return;
         }
     }
-    /*if (Game.map[newKey].contains != null && Game.map[newKey].contains instanceof Connection) {
-        var whichSide;
-        if (newKey == Game.map[newKey].contains.getKey(0)) {
-            whichSide=1;
-        }
-        else {
-            whichSide=0;
-        }
-        let parts=Game.map[newKey].contains.getKey(whichSide).split(',');
-        newX=parseInt(parts[0]);
-        newY=parseInt(parts[1]);
-        newZ=parseInt(parts[2]);
-        //console.log("newZ?");
-    }*/
-    //Game.display.draw(this.x, this.y, Game.map[this.x + ',' + this.y]);
 
     Game.map[this.x+','+this.y+','+this.z].entity=null;
 
@@ -1473,7 +1427,6 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
     // corrects entrance to mesh with entrace 1
     this.correctEntrance = function(which,acceptAny=false) {
         var desiredDirection;
-        //console.log("Correcting?");
         var pother;
         if (!which) {
             pother=this.p2;
@@ -1507,7 +1460,6 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
         }
         desiredDirection+=2;
         desiredDirection%=4;
-        //console.log(desiredDirection);
         let breaker=0;
         var success=false;
         var newKey;
@@ -1537,7 +1489,7 @@ function Connection(x1,y1,z1,x2,y2,z2, dir1, dir2) {
             breaker++;
         }
         if (!success) {return false;}
-        //console.log(newKey +' '+pother);
+
         if (!which) {
             this.p2=pother;
             if (!(this.getKey(1) in Game.map)) {
@@ -1735,7 +1687,7 @@ var TileManager = {
             if (Game.map[tiles[i]].water>2*Game.minWater) {
                 //flowRate = Math.min((Game.map[tiles[i]].water - Game.minWater)/4,Game.minWater);
                 let parts=tiles[i].split(',');
-                //console.log(parts);
+
                 let x=parseInt(parts[0]);
                 let y=parseInt(parts[1]);
                 let z=parseInt(parts[2]);
@@ -1752,7 +1704,7 @@ var TileManager = {
                             continue;
                         }*/
                         var testTile = (j + x) + ',' + (jj + y) + ',' + z;
-                        //console.log('?'+j+','+jj+' '+testTile+','+y);
+
                         if (testTile in Game.map && Game.map[testTile].liquidThrough()) {
                             if (Game.map[testTile].contains instanceof Connection) {
                                 var whichSide;
@@ -1767,7 +1719,7 @@ var TileManager = {
                             //if ()
                             if (Game.map[testTile].water < Game.map[tiles[i]].water) {
                                 flowRate = (Game.map[tiles[i]].water - Game.map[testTile].water)/8;
-                                //console.log("add some water");
+
                                 if (Game.map[testTile].liquidType != Game.map[tiles[i]].liquidType) {
                                     if (Game.map[testTile].water > Game.minWater) {
                                         //Game.map[tiles[i]].solidify=true;
@@ -1803,20 +1755,13 @@ var TileManager = {
                 }
             }
             if (Game.map[tiles[i]].solidify) {
-                //console.log('solidifying?');
+
                 Game.map[tiles[i]].solidify=false;
                 Game.map[tiles[i]].color='#666';
                 Game.map[tiles[i]].water=0;
                 Game.map[tiles[i]].nextWater=0;
                 Game.map[tiles[i]].lake=false;
-                /*if (Game.map[tiles[i]].entity==null && Game.map[tiles[i]].contains==null) {
-                    let key = tiles[i];
-                    let parts = key.split(',');
-                    let px = parseInt(parts[0]);
-                    let py = parseInt(parts[1]);
-                    let pz = parseInt(parts[2]);
-                    Game.scheduler.add(EntityMaker.makeByName('Obsidian',px,py,pz));
-                }*/
+
             }
         }
     }
@@ -1839,7 +1784,6 @@ function Tile(char,color,passable,seethrough,contains,direction,water=0,liquidTy
     this.lake=lake;
     this.lastSeenChar=' ';
     this.setDirection=function(newDir) {
-        //console.log("Setting to")
         this.direction=newDir;
     }
     this.getDirection=function() {
