@@ -502,7 +502,7 @@ var RoomGen = {
         var roomBounds=[0,0,0,0];
         //console.log(opts);
         if (bigroom && 'islandRoom' in opts.roomOpts) {
-            opts.roomOpts.islandRoom *= 6;
+            opts.roomOpts.islandRoom *= 3;
         }
         //var roomOpts = ['rectRoom','roundRoom','tRoom','caveRoom','hallRoom'];
         let thisRoom = ROT.RNG.getWeightedValue(opts.roomOpts);
