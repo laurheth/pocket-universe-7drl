@@ -575,7 +575,7 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
         }
         var success = false;
         var breaker = 0;
-        if (Game.player.z == this.z) {
+        if (Game.player.z == this.z && this.seen) {
             this.targetPos=[Game.player.x,Game.player.y];
             this.chaseTimer=10;
         }
