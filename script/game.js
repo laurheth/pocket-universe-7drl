@@ -90,18 +90,10 @@ var Game = {
 
         this.fov = new ROT.FOV.PreciseShadowcasting(lightPasses);
         this.portalFov = new ROT.FOV.PreciseShadowcasting(lightPassesPortal);
-        //this._drawVisible();
-        //this.player.draw();
 
         
         this.scheduler.add(this.player, true);
-        //this.scheduler.add(this._addEntity('Plant'),true);
-        //this.scheduler.add(this._addEntity('FrostDemon'),true);
-        //this.scheduler.add(this._addEntity('FrostDemon'),true);
-        //this.scheduler.add(this._addEntity('FrostDemon'),true);
-        //this.scheduler.add(this._addEntity('Volcano'),true);
-        //this.scheduler.add(this._addEntity('Staircase'),true);
-        //this.scheduler.add(this.addImportant('Staircase'),true);
+
         this.importantFeatures();
         this.scheduler.add(TileManager,true);
         this.engine = new ROT.Engine(this.scheduler);

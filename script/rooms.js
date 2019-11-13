@@ -656,6 +656,8 @@ var RoomGen = {
                     let py=parseInt(parts[1]);
                     let pz=parseInt(parts[2]);
                     Game.addEntity('NormalChest',px,py,pz);
+                    Game.map[roomCells[index]].entity.hasInside = Game.map[roomCells[index]].contains;
+                    Game.map[roomCells[index]].contains = null;
                 }
             }
             return true;

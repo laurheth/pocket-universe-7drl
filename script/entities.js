@@ -32,6 +32,7 @@ function Entity (x,y,z,char,color,name, lightPasses=true) {
     this.spawnTurn=Game.currentTurn;
     this.relentless=false;
     this.seenVia=null;
+    this.hasInside=null;
     Game.map[x+','+y+','+z].entity=this;
 };
 
@@ -792,6 +793,23 @@ var DestructMixin = function(obj,destroyMethod="destroy") {
         Game.map[this.getKey()].entity=null;
         this.active=false;
         Game.sendMessage("You "+this.destroyMethod+" "+this.getName()+"!");
+        if (this.hasInside !== null) {
+            let breaker=0;
+            let droppedContents = false;
+            while (breaker<20 && !droppedContents) {
+                for (let i=-breaker;i<=breaker;i++) {
+                    for (let j=-breaker;j<=breaker;j++) {
+                        let key = (this.x+i)+','+(this.y+j)+','+(this.z);
+                        if (key in Game.map && Game.map[key].contains == null) {
+                            Game.map[key].contains = this.hasInside;
+                            droppedContents=true;
+                            break;
+                        }
+                    }
+                    if (droppedContents) {break;}
+                }
+            }
+        }
     };
 };
 
