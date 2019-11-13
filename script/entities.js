@@ -30,6 +30,7 @@ function Entity (x,y,z,char,color,name, lightPasses=true) {
     this.amphibious=false;
     this.poisonous=false;
     this.spawnTurn=Game.currentTurn;
+    this.determination=10;
     this.relentless=false;
     this.seenVia=null;
     this.hasInside=null;
@@ -577,16 +578,16 @@ var ChaseMixin = function(obj,verb="attacks",dmg=2,slow=false,sturdy=false) {
         var breaker = 0;
         if (Game.player.z == this.z && this.seen) {
             this.targetPos=[Game.player.x,Game.player.y];
-            this.chaseTimer=10;
+            this.chaseTimer=this.determination;
         }
         else if (this.seenVia != null) {
             if (this.z == this.seenVia.zList()[0]) {
                 this.targetPos = this.seenVia.getXY(0);
-                this.chaseTimer=4;
+                this.chaseTimer=Math.floor(this.determination / 2);
             }
             else if (this.z == this.seenVia.zList()[1]) {
                 this.targetPos = this.seenVia.getXY(1);
-                this.chaseTimer=4;
+                this.chaseTimer=Math.floor(this.determination / 2);
             }
         }
 
@@ -1027,7 +1028,8 @@ var EntityMaker = {
             newThing.yellSound="roars";
             newThing.burns=false;
             newThing.amphibious=true;
-            newThing.relentless=true;
+            // newThing.relentless=true;
+            newThing.determination=30;
             break;
             case 'FrostDemon':
             newThing = new Entity(x,y,z,'F','#0ff','Frost Demon',true);
@@ -1101,6 +1103,7 @@ var EntityMaker = {
             newThing.tempHate.push('hot','cold');
             newThing.yellSound='shouts "Tonight we spelunk in hell!"';
             newThing.important=true;
+            bewThing.relentless=true;
             break;
             case 'Wizard':
             newThing = new Entity(x,y,z,'@','#f0f','Wizard',true);
@@ -1168,7 +1171,8 @@ var EntityMaker = {
             newThing.tempHate.push('hot');
             newThing.yellSound="growls";
             newThing.amphibious=true;
-            newThing.relentless=true;
+            // newThing.relentless=true;
+            newThing.determination = 20;
             break;
             case 'FlameDemon':
             newThing = new Entity(x,y,z,'F','#fa0','Flame Demon',true);
